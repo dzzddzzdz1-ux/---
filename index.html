@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>力学ラボ</title>
-<meta name="description" content="二重振り子、位相空間、回転座標系を動かして確かめる、学部力学のシミュレーション。">
+<title>SimPhys | 学部物理を動かして理解する</title>
+<meta name="description" content="学部物理の、式だけでは想像しにくいところを、シミュレーションで動かして確かめるためのサイト。力学・電磁気から公開中。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
@@ -164,817 +164,96 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .eq i { font-style: italic; }
 .foot { font-size: 12px; color: var(--ink-3); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+.eyebrow a { color: var(--accent); text-decoration: none; }
+h1 .sub { display: block; font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0.04em; margin-top: 4px; }
+.nb { display: inline-block; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.card {
+  display: flex; flex-direction: column; gap: 10px; padding: 12px 12px 14px; text-decoration: none; color: inherit;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
+}
+a.card:hover { border-color: var(--accent); }
+a.card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.card.soon { border-style: dashed; background: transparent; }
+.thumb { border-radius: 8px; background: var(--stage); border: 1px solid var(--line); aspect-ratio: 16 / 9; width: 100%; display: block; }
+.card.soon .thumb { opacity: 0.55; }
+.card h2 { font-size: 18px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.card h2 .go { font-size: 13px; font-weight: 500; color: var(--accent); white-space: nowrap; }
+.card.soon h2 .go { color: var(--ink-3); }
+.card p { color: var(--ink-2); font-size: 14px; line-height: 1.7; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; list-style: none; }
+.tags li { font-size: 12px; line-height: 1.4; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); background: var(--stage); }
+.about { display: flex; flex-direction: column; gap: 8px; max-width: 42em; }
+.about h2 { font-size: 16px; }
+.about p { color: var(--ink-2); font-size: 14px; }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="head">
-    <p class="eyebrow">学部物理 / 力学 · 試作</p>
-    <h1>力学ラボ</h1>
-    <p class="lede">式では追いにくいところを、動かして確かめるためのページです。二重振り子、位相空間、回転座標系の3つを試作しました。</p>
+    <p class="eyebrow">SimPhys / 学部物理のシミュレーション</p>
+    <h1><span class="nb">学部物理を、</span><span class="nb">動かして理解する</span><span class="sub">simphys.xyz</span></h1>
+    <p class="lede">式を追っただけでは想像しにくいところを、パラメータを動かしながら確かめるためのサイトです。分野を選んでください。</p>
   </header>
 
-  <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
-    <button class="tab" role="tab" id="tab-dp" aria-controls="panel-dp" aria-selected="true" tabindex="0">二重振り子</button>
-    <button class="tab" role="tab" id="tab-ph" aria-controls="panel-ph" aria-selected="false" tabindex="-1">位相空間</button>
-    <button class="tab" role="tab" id="tab-rot" aria-controls="panel-rot" aria-selected="false" tabindex="-1">回転座標系</button>
-  </div>
-
-  <!-- 1. 二重振り子 -->
-  <section class="panel" id="panel-dp" role="tabpanel" aria-labelledby="tab-dp">
-    <div class="intro">
-      <h2>ほぼ同じ出発点が、なぜ別の動きになるのか</h2>
-      <p>二重振り子を2つ、初期角度をわずかにずらして同時に動かします。最初は重なって見えますが、しばらくすると別々の動きになります。</p>
+  <main class="cards" aria-label="分野の一覧">
+    <a class="card" href="mechanics.html">
+      <svg class="thumb" viewBox="0 0 160 90" role="img" aria-label="二重振り子の図">
+  <path d="M80 12 L48 44 L70 76" fill="none" stroke="var(--ink-2)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M70 76 C 92 84, 124 74, 118 50 C 114 34, 96 38, 100 54" fill="none" stroke="var(--accent)" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.8"/>
+  <circle cx="80" cy="12" r="3" fill="var(--ink-3)"/>
+  <circle cx="48" cy="44" r="6" fill="var(--accent)"/>
+  <circle cx="70" cy="76" r="6" fill="var(--warm)"/>
+</svg>
+      <h2>力学 <span class="go">開く →</span></h2>
+      <p>わずかな違いが広がるカオスや、見る系によって力が変わる様子を動かして確かめます。</p>
+      <ul class="tags"><li>二重振り子</li><li>位相空間</li><li>回転座標系</li></ul>
+    </a>
+    <a class="card" href="em.html">
+      <svg class="thumb" viewBox="0 0 160 90" role="img" aria-label="正負の電荷と電気力線の図">
+  <g fill="none" stroke="var(--ink-2)" stroke-width="1.3" stroke-linecap="round">
+    <path d="M58 45 C 70 45, 90 45, 102 45"/>
+    <path d="M60 40 C 70 22, 90 22, 100 40"/>
+    <path d="M60 50 C 70 68, 90 68, 100 50"/>
+    <path d="M58 36 C 66 8, 94 8, 102 36" opacity="0.7"/>
+    <path d="M58 54 C 66 82, 94 82, 102 54" opacity="0.7"/>
+  </g>
+  <g fill="none" stroke="var(--ink-3)" stroke-width="1" opacity="0.7"><path d="M80 6 L80 84"/><ellipse cx="46" cy="45" rx="14" ry="30"/><ellipse cx="114" cy="45" rx="14" ry="30"/></g>
+  <circle cx="54" cy="45" r="7" fill="var(--warm)"/>
+  <circle cx="106" cy="45" r="7" fill="var(--accent)"/>
+  <path d="M50.5 45 h7 M54 41.5 v7" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M102.5 45 h7" stroke="var(--surface)" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
+      <h2>電磁気 <span class="go">開く →</span></h2>
+      <p>目に見えない場の広がりと向きを、電荷や粒子を動かしながら確かめます。</p>
+      <ul class="tags"><li>電場と電位</li><li>荷電粒子のドリフト</li><li>電磁波と薄膜干渉</li></ul>
+    </a>
+    <div class="card soon">
+      <svg class="thumb" viewBox="0 0 160 90" role="img" aria-label="井戸型ポテンシャルの波動関数の図">
+  <path d="M30 14 V76 H130 V14" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/>
+  <path d="M30 50 C 46 20, 66 20, 80 50 S 114 78, 130 50" fill="none" stroke="var(--accent)" stroke-width="1.6" opacity="0.8"/>
+</svg>
+      <h2>量子力学 <span class="go">準備中</span></h2>
+      <p>波動関数やトンネル効果を、波として動かして見られるようにする予定です。</p>
     </div>
-    <div class="stage-grid">
-      <div class="figs">
-        <figure class="fig">
-          <div class="cv"><canvas id="cv-dp" data-aspect="1" role="img" aria-label="2つの二重振り子の動き。青がA、橙がB。"></canvas></div>
-          <figcaption>
-            <span><i class="dot accent"></i>A</span>
-            <span><i class="dot warm"></i>B(Aより θ<sub>1</sub> を δ だけ大きくしたもの)</span>
-          </figcaption>
-        </figure>
-        <figure class="fig">
-          <div class="cv"><canvas id="cv-sep" data-aspect="0.62" role="img" aria-label="AとBの角度の差を、時間に対して対数軸で描いたグラフ。"></canvas></div>
-          <figcaption>AとBの差(縦軸は対数)。右上がりの間は、差が指数関数的に広がっています。</figcaption>
-        </figure>
-      </div>
-
-      <div class="ctrl">
-        <div class="field">
-          <label for="dp-th1"><span>θ<sub>1</sub> 初期角度</span><output id="dp-th1-v"></output></label>
-          <input type="range" id="dp-th1" min="0" max="180" step="1" value="120">
-        </div>
-        <div class="field">
-          <label for="dp-th2"><span>θ<sub>2</sub> 初期角度</span><output id="dp-th2-v"></output></label>
-          <input type="range" id="dp-th2" min="-180" max="180" step="1" value="60">
-        </div>
-        <div class="field">
-          <label for="dp-delta"><span>BとAの初期差 δ</span><output id="dp-delta-v"></output></label>
-          <input type="range" id="dp-delta" min="-6" max="-1" step="1" value="-3">
-        </div>
-        <div class="field">
-          <span class="lab"><span>再生速度</span></span>
-          <div class="btns" id="dp-speed">
-            <button class="chip" data-v="1" aria-pressed="true">×1</button>
-            <button class="chip" data-v="2" aria-pressed="false">×2</button>
-            <button class="chip" data-v="4" aria-pressed="false">×4</button>
-          </div>
-        </div>
-        <label class="check"><input type="checkbox" id="dp-trail" checked>先端の軌跡を表示</label>
-        <div class="btns">
-          <button class="btn primary" id="dp-pause">一時停止</button>
-          <button class="btn" id="dp-reset">最初から</button>
-        </div>
-        <div class="meters">
-          <div class="meter"><span class="k">経過時間</span><span class="v" id="dp-t">0.0 s</span></div>
-          <div class="meter"><span class="k">AとBの差 |Δ|</span><span class="v" id="dp-d">0</span></div>
-          <div class="meter"><span class="k">広がる速さ λ(目安)</span><span class="v" id="dp-lam">計測中</span></div>
-          <div class="meter"><span class="k">Aのエネルギーのずれ</span><span class="v" id="dp-de">0</span></div>
-        </div>
-      </div>
+    <div class="card soon">
+      <svg class="thumb" viewBox="0 0 160 90" role="img" aria-label="箱の中を動く粒子の図">
+  <rect x="30" y="14" width="100" height="62" rx="3" fill="none" stroke="var(--ink-3)" stroke-width="1.4"/>
+  <g fill="var(--accent)" opacity="0.8"><circle cx="48" cy="30" r="3.4"/><circle cx="70" cy="58" r="3.4"/><circle cx="92" cy="28" r="3.4"/><circle cx="110" cy="52" r="3.4"/><circle cx="84" cy="46" r="3.4"/></g>
+  <g fill="var(--warm)" opacity="0.8"><circle cx="58" cy="44" r="3.4"/><circle cx="100" cy="66" r="3.4"/><circle cx="120" cy="30" r="3.4"/></g>
+</svg>
+      <h2>熱・統計力学 <span class="go">準備中</span></h2>
+      <p>粒子の集まりから、温度やエントロピーが現れる様子を見られるようにする予定です。</p>
     </div>
+  </main>
 
-    <div class="read">
-      <h3>見どころ</h3>
-      <ul>
-        <li>差のグラフが右上がりの直線になっている間は、差が指数関数的に増えています。直線の傾きが、カオスの強さを表すリアプノフ指数 λ です。</li>
-        <li>差が 1 rad 前後で頭打ちになると、AとBは無関係な動きをします。δ を 10<sup>-3</sup> から 10<sup>-6</sup> に変えても、頭打ちまでの時間は ln(1000)/λ ほどしか延びません。</li>
-        <li>エネルギーのずれは、数値計算の精度の目安です。刻み 2 ms の4次ルンゲ・クッタ法で、m = 1 kg、ℓ = 1 m として計算しています。</li>
-      </ul>
-      <div class="eq" aria-label="ラグランジアン">
-        <span class="ln"><i>L</i> = ½(<i>m</i><sub>1</sub>+<i>m</i><sub>2</sub>)<i>ℓ</i><sub>1</sub><sup>2</sup><i>ω</i><sub>1</sub><sup>2</sup> + ½<i>m</i><sub>2</sub><i>ℓ</i><sub>2</sub><sup>2</sup><i>ω</i><sub>2</sub><sup>2</sup> + <i>m</i><sub>2</sub><i>ℓ</i><sub>1</sub><i>ℓ</i><sub>2</sub><i>ω</i><sub>1</sub><i>ω</i><sub>2</sub>cos(<i>θ</i><sub>1</sub>−<i>θ</i><sub>2</sub>)</span>
-        <span class="ln">  + (<i>m</i><sub>1</sub>+<i>m</i><sub>2</sub>)<i>gℓ</i><sub>1</sub>cos<i>θ</i><sub>1</sub> + <i>m</i><sub>2</sub><i>gℓ</i><sub>2</sub>cos<i>θ</i><sub>2</sub>　(<i>ω<sub>i</sub></i> = d<i>θ<sub>i</sub></i>/d<i>t</i>)</span>
-        <span class="ln">d/d<i>t</i>(∂<i>L</i>/∂<i>ω<sub>i</sub></i>) = ∂<i>L</i>/∂<i>θ<sub>i</sub></i></span>
-      </div>
-    </div>
+  <section class="about" aria-labelledby="about-h">
+    <h2 id="about-h">このサイトについて</h2>
+    <p>大学の物理を学ぶ中で、式は追えても絵が浮かびにくかったところを、手元で動かして確かめられる形にしています。計算はすべてブラウザの中で行い、入力した内容は送信されません。</p>
   </section>
 
-  <!-- 2. 位相空間 -->
-  <section class="panel" id="panel-ph" role="tabpanel" aria-labelledby="tab-ph" hidden>
-    <div class="intro">
-      <h2>平面上の1点が、振り子の状態そのもの</h2>
-      <p>横軸が角度 θ、縦軸が角速度 ω です。右の平面をタップまたはドラッグすると、その点から振り子が動き出します。</p>
-    </div>
-    <div class="figs pair">
-      <figure class="fig">
-        <figcaption>実空間(色は右の軌道に対応)</figcaption>
-        <div class="cv"><canvas id="cv-pend" data-aspect="0.85" role="img" aria-label="単振り子の実空間での動き。"></canvas></div>
-      </figure>
-      <figure class="fig">
-        <figcaption>位相平面(破線は分離線)</figcaption>
-        <div class="cv"><canvas id="cv-phase" class="touchable" data-aspect="0.85" role="img" aria-label="単振り子の位相平面。タップで初期条件を置ける。"></canvas></div>
-      </figure>
-    </div>
-    <div class="ctrl cols">
-      <div class="field">
-        <span class="lab"><span>初期条件の例</span></span>
-        <div class="btns" id="ph-presets">
-          <button class="chip" data-th="0.4" data-w="0">小さく振る</button>
-          <button class="chip" data-th="2.4" data-w="0">大きく振る</button>
-          <button class="chip" data-th="3.0" data-w="0">真上の近くから</button>
-          <button class="chip" data-th="0" data-w="2.3">回転させる</button>
-        </div>
-      </div>
-      <div class="field">
-        <label for="ph-gam"><span>減衰 γ</span><output id="ph-gam-v"></output></label>
-        <input type="range" id="ph-gam" min="0" max="0.4" step="0.02" value="0">
-        <div class="btns" style="margin-top:8px">
-          <button class="btn primary" id="ph-pause">一時停止</button>
-          <button class="btn" id="ph-clear">軌道を消す</button>
-        </div>
-      </div>
-      <div class="meters">
-        <div class="meter"><span class="k">エネルギー E(最新の軌道)</span><span class="v" id="ph-e">0</span></div>
-        <div class="meter"><span class="k">運動の種類</span><span class="v" id="ph-type">—</span></div>
-        <div class="meter"><span class="k">周期 T / T<sub>0</sub></span><span class="v" id="ph-T">—</span></div>
-      </div>
-    </div>
-    <div class="read">
-      <h3>見どころ</h3>
-      <ul>
-        <li>小さく振ると、軌道はほぼ楕円になります。単振動の位相空間と同じ形です。</li>
-        <li>振幅を大きくすると、軌道は楕円からゆがみ、周期 T が単振動の周期 T<sub>0</sub> より長くなります。T / T<sub>0</sub> の表示で確かめられます。</li>
-        <li>破線(分離線)は、真上でちょうど止まる運動の軌道です。その外側では、振り子は往復せずに回り続けます。</li>
-        <li>減衰を入れると、軌道は原点に巻き込まれていきます。回転していた振り子も、やがて往復運動に変わります。</li>
-      </ul>
-      <div class="eq" aria-label="運動方程式とエネルギー">
-        <span class="ln">d<sup>2</sup><i>θ</i>/d<i>t</i><sup>2</sup> = −sin<i>θ</i> − <i>γ</i> d<i>θ</i>/d<i>t</i>　(時間の単位は 1/<i>ω</i><sub>0</sub> = √(<i>ℓ</i>/<i>g</i>))</span>
-        <span class="ln"><i>E</i> = ½(d<i>θ</i>/d<i>t</i>)<sup>2</sup> − cos<i>θ</i></span>
-        <span class="ln"><i>T</i>/<i>T</i><sub>0</sub> = 2<i>K</i>(<i>k</i>)/π,　<i>k</i> = sin(<i>θ</i><sub>max</sub>/2)　(<i>K</i> は第1種完全楕円積分)</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- 3. 回転座標系 -->
-  <section class="panel" id="panel-rot" role="tabpanel" aria-labelledby="tab-rot" hidden>
-    <div class="intro">
-      <h2>回る台の上では、まっすぐ進むボールが曲がる</h2>
-      <p>台の中心から、縁の紫の目印をめがけてボールを転がします。台の外から見ると直進ですが、台の上から見ると曲がります。</p>
-    </div>
-    <div class="figs pair">
-      <figure class="fig">
-        <figcaption>静止系(台の外から見る)</figcaption>
-        <div class="cv"><canvas id="cv-in" data-aspect="1" role="img" aria-label="静止系。台が回り、ボールは直進する。"></canvas></div>
-      </figure>
-      <figure class="fig">
-        <figcaption>
-          <span>回転系(台の上から見る)</span>
-          <span><i class="dot accent"></i>速度</span>
-          <span><i class="dot warm"></i>コリオリ力</span>
-          <span><i class="dot green"></i>遠心力</span>
-        </figcaption>
-        <div class="cv"><canvas id="cv-rot" data-aspect="1" role="img" aria-label="回転系。ボールの軌跡が曲がる。"></canvas></div>
-      </figure>
-    </div>
-    <div class="ctrl cols">
-      <div class="field">
-        <label for="rt-om"><span>台の角速度 Ω(反時計回りが正)</span><output id="rt-om-v"></output></label>
-        <input type="range" id="rt-om" min="-3" max="3" step="0.1" value="1.5">
-      </div>
-      <div class="field">
-        <label for="rt-v"><span>ボールの速さ v</span><output id="rt-v-v"></output></label>
-        <input type="range" id="rt-v" min="0.4" max="2" step="0.1" value="1">
-      </div>
-      <div class="field">
-        <span class="lab"><span>再生速度</span></span>
-        <div class="btns" id="rt-speed">
-          <button class="chip" data-v="0.25" aria-pressed="false">×0.25</button>
-          <button class="chip" data-v="0.5" aria-pressed="true">×0.5</button>
-          <button class="chip" data-v="1" aria-pressed="false">×1</button>
-        </div>
-      </div>
-      <div class="field">
-        <label class="check"><input type="checkbox" id="rt-vec" checked>回転系に矢印を表示</label>
-        <div class="btns" style="margin-top:8px">
-          <button class="btn primary" id="rt-pause">一時停止</button>
-          <button class="btn" id="rt-reset">最初から</button>
-        </div>
-      </div>
-      <div class="meters">
-        <div class="meter"><span class="k">経過時間</span><span class="v" id="rt-t">0.00 s</span></div>
-        <div class="meter"><span class="k">台の回転角 Ωt</span><span class="v" id="rt-ang">0°</span></div>
-        <div class="meter"><span class="k">縁での目印とのずれ</span><span class="v" id="rt-dev">0°</span></div>
-      </div>
-    </div>
-    <div class="read">
-      <h3>見どころ</h3>
-      <ul>
-        <li>左の静止系では、ボールに力は働かず直進します。曲がって見えるのは、台のほうが回っているからです。</li>
-        <li>右の回転系でボールが曲がることを「力が働いた」と解釈すると、速度に垂直なコリオリ力と、中心から外向きの遠心力が必要になります。矢印の長さは、速度は速度どうし、力は力どうしで比べられます。</li>
-        <li>縁に着いたときの目印とのずれ角は Ω<i>R</i>/<i>v</i> です。速く転がすほどずれは小さくなり、Ω の符号を変えると曲がる向きが逆になります。</li>
-      </ul>
-      <div class="eq" aria-label="回転系での運動方程式">
-        <span class="ln"><i>m</i><b>a</b>′ = <b>F</b> − 2<i>m</i><b>Ω</b>×<b>v</b>′ − <i>m</i><b>Ω</b>×(<b>Ω</b>×<b>r</b>′)　(′ は回転系での量)</span>
-        <span class="ln"><b>r</b>′(<i>t</i>) = <i>R</i>(−Ω<i>t</i>) <b>r</b>(<i>t</i>)　(<i>R</i> は回転行列。ここでは <b>F</b> = 0)</span>
-      </div>
-    </div>
-  </section>
-
-  <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
+  <p class="foot">試作版です。内容は順次追加していきます。</p>
 </div>
-
-<script>
-(function () {
-  'use strict';
-
-  const $ = (id) => document.getElementById(id);
-  const PI = Math.PI;
-  const TAU = 2 * Math.PI;
-  const MONO = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
-  const RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  /* PHYSICS-BEGIN */
-  const G = 9.8;
-  // 二重振り子(m1 = m2 = 1, l1 = l2 = 1)。状態 s = [th1, th2, w1, w2]
-  function dpDeriv(s) {
-    const t1 = s[0], t2 = s[1], w1 = s[2], w2 = s[3];
-    const d = t1 - t2, sd = Math.sin(d), cd = Math.cos(d);
-    const den = 3 - Math.cos(2 * d);
-    const a1 = (-3 * G * Math.sin(t1) - G * Math.sin(t1 - 2 * t2) - 2 * sd * (w2 * w2 + w1 * w1 * cd)) / den;
-    const a2 = (2 * sd * (2 * w1 * w1 + 2 * G * Math.cos(t1) + w2 * w2 * cd)) / den;
-    return [w1, w2, a1, a2];
-  }
-  function dpRk4(s, h) {
-    const k1 = dpDeriv(s);
-    const k2 = dpDeriv(s.map((v, i) => v + 0.5 * h * k1[i]));
-    const k3 = dpDeriv(s.map((v, i) => v + 0.5 * h * k2[i]));
-    const k4 = dpDeriv(s.map((v, i) => v + h * k3[i]));
-    return s.map((v, i) => v + h / 6 * (k1[i] + 2 * k2[i] + 2 * k3[i] + k4[i]));
-  }
-  function dpEnergy(s) {
-    return s[2] * s[2] + 0.5 * s[3] * s[3] + s[2] * s[3] * Math.cos(s[0] - s[1])
-      - G * (2 * Math.cos(s[0]) + Math.cos(s[1]));
-  }
-  // 単振り子(時間は 1/w0 を単位とする)
-  function pendF(th, w, gam) { return [w, -Math.sin(th) - gam * w]; }
-  function pendStep(q, h, gam) {
-    const k1 = pendF(q.th, q.w, gam);
-    const k2 = pendF(q.th + 0.5 * h * k1[0], q.w + 0.5 * h * k1[1], gam);
-    const k3 = pendF(q.th + 0.5 * h * k2[0], q.w + 0.5 * h * k2[1], gam);
-    const k4 = pendF(q.th + h * k3[0], q.w + h * k3[1], gam);
-    q.th += h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
-    q.w += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
-  }
-  function agm(a, b) {
-    for (let i = 0; i < 40; i++) {
-      const an = (a + b) / 2, bn = Math.sqrt(a * b);
-      a = an; b = bn;
-      if (Math.abs(a - b) < 1e-15) break;
-    }
-    return a;
-  }
-  // E < 1 のときの T / T0 = 2K(k)/pi = 1 / AGM(1, cos(thmax/2))
-  function periodRatio(E) {
-    const thm = Math.acos(Math.max(-1, Math.min(1, -E)));
-    return 1 / agm(1, Math.max(1e-9, Math.cos(thm / 2)));
-  }
-  // 回転台。静止系では (中心から角度 phi の向きに) 速さ v で直進する。
-  function inPos(tt, v, phi) { return [v * tt * Math.cos(phi), v * tt * Math.sin(phi)]; }
-  function rotPos(tt, Om, v, phi) {
-    const a = -Om * tt, c = Math.cos(a), s = Math.sin(a), p = inPos(tt, v, phi);
-    return [p[0] * c - p[1] * s, p[0] * s + p[1] * c];
-  }
-  function rotVel(tt, Om, v, phi) {
-    const a = -Om * tt, c = Math.cos(a), s = Math.sin(a);
-    const vx = v * Math.cos(phi), vy = v * Math.sin(phi), p = rotPos(tt, Om, v, phi);
-    return [vx * c - vy * s + Om * p[1], vx * s + vy * c - Om * p[0]];
-  }
-  function rotCor(vr, Om) { return [2 * Om * vr[1], -2 * Om * vr[0]]; }
-  function rotCen(p, Om) { return [Om * Om * p[0], Om * Om * p[1]]; }
-  /* PHYSICS-END */
-
-  /* ---------- 共通 ---------- */
-  const C = {};
-  const COLOR_KEYS = ['ink', 'ink-2', 'ink-3', 'line', 'grid', 'accent', 'warm', 'green', 'violet', 'stage', 'surface'];
-  function readColors() {
-    const cs = getComputedStyle(document.documentElement);
-    for (const k of COLOR_KEYS) C[k] = cs.getPropertyValue('--' + k).trim();
-  }
-  function fit(cv) {
-    const w = Math.max(200, cv.parentElement.clientWidth);
-    const h = Math.round(w * parseFloat(cv.dataset.aspect));
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    cv.style.height = h + 'px';
-    cv.width = Math.round(w * dpr);
-    cv.height = Math.round(h * dpr);
-    const ctx = cv.getContext('2d');
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    return { ctx: ctx, w: w, h: h };
-  }
-  function setText(id, s) { const el = $(id); if (el && el.textContent !== s) el.textContent = s; }
-  function bindRange(id, fmtFn, onChange) {
-    const el = $(id), out = $(id + '-v');
-    const upd = () => { out.innerHTML = fmtFn(+el.value); };
-    el.addEventListener('input', () => { upd(); onChange(+el.value); });
-    upd();
-  }
-  function bindChips(groupId, onPick) {
-    const chips = $(groupId).querySelectorAll('.chip');
-    chips.forEach((ch) => {
-      ch.addEventListener('click', () => {
-        chips.forEach((o) => o.setAttribute('aria-pressed', o === ch ? 'true' : 'false'));
-        onPick(parseFloat(ch.dataset.v));
-      });
-    });
-  }
-  function arrow(ctx, x0, y0, x1, y1, col, lw) {
-    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
-    if (L < 2) return;
-    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2; ctx.lineCap = 'round';
-    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    const ux = dx / L, uy = dy / L, hl = Math.min(10, L * 0.55), hw = hl * 0.55;
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x1 - ux * hl - uy * hw, y1 - uy * hl + ux * hw);
-    ctx.lineTo(x1 - ux * hl + uy * hw, y1 - uy * hl - ux * hw);
-    ctx.closePath(); ctx.fill();
-  }
-  function setPauseLabel(btnId, paused) { $(btnId).textContent = paused ? '再開' : '一時停止'; }
-
-  /* ---------- 1. 二重振り子 ---------- */
-  const DP = (function () {
-    const H = 0.002, SAMPLE = 0.02;
-    const cv = $('cv-dp'), cs = $('cv-sep');
-    let c1, c2, s1 = { w: 0, h: 0 }, s2 = { w: 0, h: 0 };
-    let A, B, t, E0, acc, nextS, hist, lam, trA, trB;
-    let paused = RM, speed = 1, showTrail = true;
-
-    function dist() { return Math.hypot(B[0] - A[0], B[1] - A[1]); }
-    function estimate() {
-      const d0 = Math.pow(10, +$('dp-delta').value);
-      const lo = Math.log(10 * d0), hi = Math.log(0.3);
-      if (lo >= hi) return NaN;
-      let n = 0, sx = 0, sy = 0, sxx = 0, sxy = 0;
-      for (const p of hist) {
-        const y = p[1] * Math.LN10;
-        if (y >= lo && y <= hi) { n++; sx += p[0]; sy += y; sxx += p[0] * p[0]; sxy += p[0] * y; }
-      }
-      if (n < 5) return NaN;
-      return (n * sxy - sx * sy) / (n * sxx - sx * sx);
-    }
-    function sample() {
-      const ld = Math.log10(Math.max(dist(), 1e-14));
-      hist.push([t, ld]);
-      if (lam === null && ld > Math.log10(0.3)) lam = estimate();
-      if (hist.length > 12000) hist.shift();
-    }
-    function reset() {
-      const a1 = +$('dp-th1').value * PI / 180, a2 = +$('dp-th2').value * PI / 180;
-      const d = Math.pow(10, +$('dp-delta').value);
-      A = [a1, a2, 0, 0]; B = [a1 + d, a2, 0, 0];
-      t = 0; E0 = dpEnergy(A); acc = 0; nextS = SAMPLE; hist = []; lam = null; trA = []; trB = [];
-      sample();
-    }
-    function step(dt) {
-      if (paused) return;
-      acc += dt * speed;
-      let n = 0;
-      while (acc >= H && n < 400) {
-        A = dpRk4(A, H); B = dpRk4(B, H); t += H; acc -= H; n++;
-        if (t >= nextS) { sample(); nextS += SAMPLE; }
-      }
-      if (n >= 400) acc = 0;
-      const tip = (st) => [Math.sin(st[0]) + Math.sin(st[1]), Math.cos(st[0]) + Math.cos(st[1])];
-      trA.push(tip(A)); trB.push(tip(B));
-      if (trA.length > 240) { trA.shift(); trB.shift(); }
-    }
-    function drawTrail(tr, cx, cy, L, col) {
-      const n = tr.length;
-      if (n < 2) return;
-      c1.strokeStyle = col; c1.lineWidth = 1.8; c1.lineCap = 'round';
-      for (let i = 1; i < n; i++) {
-        c1.globalAlpha = 0.6 * i / n;
-        c1.beginPath();
-        c1.moveTo(cx + tr[i - 1][0] * L, cy + tr[i - 1][1] * L);
-        c1.lineTo(cx + tr[i][0] * L, cy + tr[i][1] * L);
-        c1.stroke();
-      }
-      c1.globalAlpha = 1;
-    }
-    function drawBob(st, cx, cy, L, col, alpha) {
-      const x1 = cx + L * Math.sin(st[0]), y1 = cy + L * Math.cos(st[0]);
-      const x2 = x1 + L * Math.sin(st[1]), y2 = y1 + L * Math.cos(st[1]);
-      c1.globalAlpha = alpha; c1.strokeStyle = col; c1.fillStyle = col; c1.lineWidth = 2.5; c1.lineCap = 'round'; c1.lineJoin = 'round';
-      c1.beginPath(); c1.moveTo(cx, cy); c1.lineTo(x1, y1); c1.lineTo(x2, y2); c1.stroke();
-      c1.beginPath(); c1.arc(x1, y1, 6, 0, TAU); c1.fill();
-      c1.beginPath(); c1.arc(x2, y2, 8, 0, TAU); c1.fill();
-      c1.globalAlpha = 1;
-    }
-    function drawPend() {
-      const w = s1.w, h = s1.h;
-      c1.clearRect(0, 0, w, h);
-      const cx = w / 2, cy = h / 2, L = (Math.min(w, h) / 2 - 14) / 2;
-      c1.strokeStyle = C.line; c1.lineWidth = 1; c1.setLineDash([3, 5]);
-      for (const r of [L, 2 * L]) { c1.beginPath(); c1.arc(cx, cy, r, 0, TAU); c1.stroke(); }
-      c1.beginPath(); c1.moveTo(cx, cy - 2 * L); c1.lineTo(cx, cy + 2 * L); c1.stroke();
-      c1.setLineDash([]);
-      if (showTrail) { drawTrail(trB, cx, cy, L, C.warm); drawTrail(trA, cx, cy, L, C.accent); }
-      drawBob(B, cx, cy, L, C.warm, 0.95);
-      drawBob(A, cx, cy, L, C.accent, 1);
-      c1.fillStyle = C.ink; c1.beginPath(); c1.arc(cx, cy, 3.5, 0, TAU); c1.fill();
-    }
-    function drawSep() {
-      const w = s2.w, h = s2.h;
-      c2.clearRect(0, 0, w, h);
-      const m = { l: 44, r: 12, t: 12, b: 26 }, pw = w - m.l - m.r, ph = h - m.t - m.b;
-      const x0 = Math.max(0, t - 20);
-      const X = (tt) => m.l + (tt - x0) / 20 * pw;
-      const Y = (v) => m.t + (1 - (v + 7) / 8) * ph;
-      c2.font = MONO; c2.lineWidth = 1;
-      c2.textAlign = 'right'; c2.textBaseline = 'middle';
-      for (let v = -6; v <= 0; v++) {
-        const y = Y(v);
-        c2.strokeStyle = v % 2 === 0 ? C.line : C.grid;
-        c2.beginPath(); c2.moveTo(m.l, y); c2.lineTo(w - m.r, y); c2.stroke();
-        if (v % 2 === 0) { c2.fillStyle = C['ink-3']; c2.fillText(v === 0 ? '1' : '1e' + v, m.l - 6, y); }
-      }
-      c2.textAlign = 'center'; c2.textBaseline = 'top';
-      for (let tt = Math.ceil(x0 / 5) * 5; tt <= x0 + 20 + 1e-9; tt += 5) {
-        const x = X(tt);
-        c2.strokeStyle = C.grid;
-        c2.beginPath(); c2.moveTo(x, m.t); c2.lineTo(x, m.t + ph); c2.stroke();
-        c2.fillStyle = C['ink-3']; c2.fillText(String(tt), x, m.t + ph + 6);
-      }
-      c2.strokeStyle = C.line; c2.strokeRect(m.l, m.t, pw, ph);
-      c2.textAlign = 'right'; c2.fillStyle = C['ink-3']; c2.fillText('t [s]', m.l - 6, m.t + ph + 6);
-      c2.textAlign = 'left'; c2.textBaseline = 'top'; c2.fillText('|Δ| [rad]', m.l + 6, m.t + 4);
-      const ld0 = +$('dp-delta').value;
-      c2.setLineDash([4, 4]); c2.strokeStyle = C['ink-3'];
-      c2.beginPath(); c2.moveTo(m.l, Y(ld0)); c2.lineTo(w - m.r, Y(ld0)); c2.stroke();
-      c2.setLineDash([]);
-      c2.textBaseline = 'bottom'; c2.fillText('δ', m.l + 6, Y(ld0) - 2);
-      c2.save();
-      c2.beginPath(); c2.rect(m.l, m.t, pw, ph); c2.clip();
-      c2.strokeStyle = C.accent; c2.lineWidth = 2; c2.lineJoin = 'round';
-      c2.beginPath();
-      let started = false;
-      for (const p of hist) {
-        if (p[0] < x0 - 0.1) continue;
-        const x = X(p[0]), y = Y(p[1]);
-        if (!started) { c2.moveTo(x, y); started = true; } else c2.lineTo(x, y);
-      }
-      c2.stroke();
-      c2.restore();
-    }
-    function readouts() {
-      setText('dp-t', t.toFixed(1) + ' s');
-      const d = dist();
-      setText('dp-d', (d < 0.01 ? d.toExponential(1) : d.toFixed(3)) + ' rad');
-      setText('dp-lam', lam === null ? '計測中' : (isNaN(lam) ? '—' : lam.toFixed(2) + ' /s'));
-      setText('dp-de', Math.abs(dpEnergy(A) - E0).toExponential(1) + ' J');
-    }
-    function resize() {
-      const a = fit(cv), b = fit(cs);
-      c1 = a.ctx; s1 = { w: a.w, h: a.h }; c2 = b.ctx; s2 = { w: b.w, h: b.h };
-    }
-    function frame(dt) { step(dt); drawPend(); drawSep(); readouts(); }
-
-    bindRange('dp-th1', (v) => v + '°', reset);
-    bindRange('dp-th2', (v) => v + '°', reset);
-    bindRange('dp-delta', (v) => '10<sup>' + v + '</sup> rad', reset);
-    bindChips('dp-speed', (v) => { speed = v; });
-    $('dp-trail').addEventListener('change', (e) => { showTrail = e.target.checked; });
-    $('dp-reset').addEventListener('click', reset);
-    $('dp-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('dp-pause', paused); });
-    setPauseLabel('dp-pause', paused);
-    reset();
-    return { frame: frame, resize: resize };
-  })();
-
-  /* ---------- 2. 位相空間 ---------- */
-  const PH = (function () {
-    const H = 0.005, WM = 3.2, KEYS = ['accent', 'warm', 'green', 'violet'];
-    const M = { l: 36, r: 12, t: 12, b: 26 };
-    const cvP = $('cv-pend'), cvF = $('cv-phase');
-    let cP, cF, sP = { w: 0, h: 0 }, sF = { w: 0, h: 0 };
-    let trajs = [], counter = 0, gam = 0, paused = RM, dragging = false;
-
-    const wrap = (th) => th - TAU * Math.round(th / TAU);
-    function add(th, w) {
-      if (trajs.length >= 4) trajs.shift();
-      trajs.push({ th: th, w: w, th0: th, w0: w, key: KEYS[counter++ % 4], acc: 0, k: 0, trail: [[wrap(th), w]] });
-    }
-    function moveLast(th, w) {
-      const q = trajs[trajs.length - 1];
-      if (!q) return;
-      q.th = th; q.w = w; q.th0 = th; q.w0 = w; q.acc = 0; q.k = 0; q.trail = [[wrap(th), w]];
-    }
-    function step(dt) {
-      if (paused) return;
-      for (const q of trajs) {
-        q.acc += dt;
-        let n = 0;
-        while (q.acc >= H && n < 300) {
-          pendStep(q, H, gam); q.acc -= H; n++; q.k++;
-          if (q.k % 6 === 0) { q.trail.push([wrap(q.th), q.w]); if (q.trail.length > 1000) q.trail.shift(); }
-        }
-        if (n >= 300) q.acc = 0;
-      }
-    }
-    function drawPend() {
-      const w = sP.w, h = sP.h;
-      cP.clearRect(0, 0, w, h);
-      const cx = w / 2, cy = h / 2, L = Math.min(w, h) / 2 - 18;
-      cP.strokeStyle = C.line; cP.lineWidth = 1; cP.setLineDash([3, 5]);
-      cP.beginPath(); cP.arc(cx, cy, L, 0, TAU); cP.stroke();
-      cP.beginPath(); cP.moveTo(cx, cy - L); cP.lineTo(cx, cy + L); cP.stroke();
-      cP.setLineDash([]);
-      for (const q of trajs) {
-        const col = C[q.key], x = cx + L * Math.sin(q.th), y = cy + L * Math.cos(q.th);
-        cP.strokeStyle = col; cP.fillStyle = col; cP.lineWidth = 2; cP.lineCap = 'round';
-        cP.beginPath(); cP.moveTo(cx, cy); cP.lineTo(x, y); cP.stroke();
-        cP.beginPath(); cP.arc(x, y, 8, 0, TAU); cP.fill();
-      }
-      cP.fillStyle = C.ink; cP.beginPath(); cP.arc(cx, cy, 3.5, 0, TAU); cP.fill();
-    }
-    function contour(X, Y, E) {
-      const N = 90;
-      cF.beginPath();
-      if (E < 1) {
-        const tm = Math.acos(-E);
-        for (let i = 0; i <= N; i++) {
-          const th = -tm + 2 * tm * i / N, wv = Math.sqrt(Math.max(0, 2 * (E + Math.cos(th))));
-          if (i === 0) cF.moveTo(X(th), Y(wv)); else cF.lineTo(X(th), Y(wv));
-        }
-        for (let i = N; i >= 0; i--) {
-          const th = -tm + 2 * tm * i / N, wv = -Math.sqrt(Math.max(0, 2 * (E + Math.cos(th))));
-          cF.lineTo(X(th), Y(wv));
-        }
-        cF.closePath();
-        cF.stroke();
-      } else {
-        for (const sg of [1, -1]) {
-          cF.beginPath();
-          for (let i = 0; i <= N; i++) {
-            const th = -PI + TAU * i / N, wv = sg * Math.sqrt(2 * (E + Math.cos(th)));
-            if (i === 0) cF.moveTo(X(th), Y(wv)); else cF.lineTo(X(th), Y(wv));
-          }
-          cF.stroke();
-        }
-      }
-    }
-    function drawPhase() {
-      const w = sF.w, h = sF.h, pw = w - M.l - M.r, ph = h - M.t - M.b;
-      cF.clearRect(0, 0, w, h);
-      const X = (th) => M.l + (th + PI) / TAU * pw;
-      const Y = (v) => M.t + (1 - (v + WM) / (2 * WM)) * ph;
-      cF.font = MONO; cF.lineWidth = 1;
-      const tx = [[-PI, '-π'], [-PI / 2, '-π/2'], [0, '0'], [PI / 2, 'π/2'], [PI, 'π']];
-      cF.textAlign = 'center'; cF.textBaseline = 'top';
-      for (const p of tx) {
-        cF.strokeStyle = p[0] === 0 ? C.line : C.grid;
-        cF.beginPath(); cF.moveTo(X(p[0]), M.t); cF.lineTo(X(p[0]), M.t + ph); cF.stroke();
-        cF.fillStyle = C['ink-3']; cF.fillText(p[1], X(p[0]), M.t + ph + 6);
-      }
-      cF.textAlign = 'right'; cF.textBaseline = 'middle';
-      for (let v = -3; v <= 3; v++) {
-        cF.strokeStyle = v === 0 ? C.line : C.grid;
-        cF.beginPath(); cF.moveTo(M.l, Y(v)); cF.lineTo(M.l + pw, Y(v)); cF.stroke();
-        cF.fillStyle = C['ink-3']; cF.fillText(String(v), M.l - 6, Y(v));
-      }
-      cF.strokeStyle = C.line; cF.strokeRect(M.l, M.t, pw, ph);
-      cF.fillStyle = C['ink-3']; cF.textAlign = 'left'; cF.textBaseline = 'top';
-      cF.fillText('ω [ω0]', M.l + 6, M.t + 4);
-      cF.textAlign = 'right'; cF.textBaseline = 'bottom'; cF.fillText('θ [rad]', M.l + pw - 6, M.t + ph - 4);
-
-      cF.save();
-      cF.beginPath(); cF.rect(M.l, M.t, pw, ph); cF.clip();
-      cF.strokeStyle = C.line; cF.lineWidth = 1;
-      for (const E of [-0.8, -0.5, -0.2, 0.2, 0.5, 0.8, 1.5, 2, 3]) contour(X, Y, E);
-      cF.strokeStyle = C['ink-3']; cF.lineWidth = 1.4; cF.setLineDash([6, 4]);
-      for (const sg of [1, -1]) {
-        cF.beginPath();
-        for (let i = 0; i <= 120; i++) {
-          const th = -PI + TAU * i / 120, wv = sg * 2 * Math.cos(th / 2);
-          if (i === 0) cF.moveTo(X(th), Y(wv)); else cF.lineTo(X(th), Y(wv));
-        }
-        cF.stroke();
-      }
-      cF.setLineDash([]);
-      for (const q of trajs) {
-        const col = C[q.key];
-        cF.strokeStyle = col; cF.lineWidth = 2; cF.lineJoin = 'round';
-        cF.beginPath();
-        for (let i = 0; i < q.trail.length; i++) {
-          const p = q.trail[i], x = X(p[0]), y = Y(p[1]);
-          if (i === 0 || Math.abs(p[0] - q.trail[i - 1][0]) > PI) cF.moveTo(x, y); else cF.lineTo(x, y);
-        }
-        cF.stroke();
-        cF.beginPath(); cF.arc(X(wrap(q.th0)), Y(q.w0), 5, 0, TAU); cF.stroke();
-        cF.fillStyle = col; cF.beginPath(); cF.arc(X(wrap(q.th)), Y(q.w), 5, 0, TAU); cF.fill();
-      }
-      cF.restore();
-      if (!trajs.length) {
-        cF.fillStyle = C['ink-2']; cF.font = '13px ' + getComputedStyle(document.body).fontFamily;
-        cF.textAlign = 'center'; cF.textBaseline = 'middle';
-        cF.fillText('ここをタップして初期条件を置く', M.l + pw / 2, M.t + ph / 2);
-      }
-    }
-    function readout() {
-      const q = trajs[trajs.length - 1];
-      if (!q) { setText('ph-e', '—'); setText('ph-type', '—'); setText('ph-T', '—'); return; }
-      const E = 0.5 * q.w * q.w - Math.cos(q.th);
-      setText('ph-e', E.toFixed(3));
-      if (E < 1) {
-        setText('ph-type', '往復');
-        setText('ph-T', gam > 0 ? '減衰中は一定でない' : periodRatio(E).toFixed(3));
-      } else {
-        setText('ph-type', '回転');
-        setText('ph-T', '—');
-      }
-    }
-    function toState(e) {
-      const r = cvF.getBoundingClientRect();
-      const x = (e.clientX - r.left) / r.width * sF.w, y = (e.clientY - r.top) / r.height * sF.h;
-      const pw = sF.w - M.l - M.r, ph = sF.h - M.t - M.b;
-      let th = ((x - M.l) / pw) * TAU - PI, wv = (1 - (y - M.t) / ph) * 2 * WM - WM;
-      th = Math.max(-PI, Math.min(PI, th)); wv = Math.max(-WM, Math.min(WM, wv));
-      return [th, wv];
-    }
-    function resize() {
-      const a = fit(cvP), b = fit(cvF);
-      cP = a.ctx; sP = { w: a.w, h: a.h }; cF = b.ctx; sF = { w: b.w, h: b.h };
-    }
-    function frame(dt) { step(dt); drawPend(); drawPhase(); readout(); }
-
-    cvF.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      try { cvF.setPointerCapture(e.pointerId); } catch (err) { /* 非対応でも続行 */ }
-      dragging = true;
-      const s = toState(e); add(s[0], s[1]);
-    });
-    cvF.addEventListener('pointermove', (e) => {
-      if (!dragging) return;
-      const s = toState(e); moveLast(s[0], s[1]);
-    });
-    const endDrag = () => { dragging = false; };
-    cvF.addEventListener('pointerup', endDrag);
-    cvF.addEventListener('pointercancel', endDrag);
-    $('ph-presets').querySelectorAll('.chip').forEach((ch) => {
-      ch.addEventListener('click', () => add(parseFloat(ch.dataset.th), parseFloat(ch.dataset.w)));
-    });
-    bindRange('ph-gam', (v) => v.toFixed(2), (v) => { gam = v; });
-    $('ph-clear').addEventListener('click', () => { trajs = []; });
-    $('ph-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('ph-pause', paused); });
-    setPauseLabel('ph-pause', paused);
-    add(0.5, 0); add(2.4, 0);
-    return { frame: frame, resize: resize };
-  })();
-
-  /* ---------- 3. 回転座標系 ---------- */
-  const RT = (function () {
-    const R = 1, PHI = PI / 2;
-    const cvI = $('cv-in'), cvR = $('cv-rot');
-    let cI, cR, sI = { w: 0, h: 0 }, sR = { w: 0, h: 0 };
-    let t = 0, hold = 0, paused = RM, speed = 0.5, Om = 1.5, v = 1, showVec = true, maxV = 1, maxF = 1;
-
-    const Tend = () => R / v;
-    function scan() {
-      maxV = 1e-6; maxF = 1e-6;
-      for (let i = 0; i <= 60; i++) {
-        const tt = Tend() * i / 60, p = rotPos(tt, Om, v, PHI), vr = rotVel(tt, Om, v, PHI);
-        const a = rotCor(vr, Om), b = rotCen(p, Om);
-        maxV = Math.max(maxV, Math.hypot(vr[0], vr[1]));
-        maxF = Math.max(maxF, Math.hypot(a[0], a[1]), Math.hypot(b[0], b[1]));
-      }
-    }
-    function reset() { t = 0; hold = 0; scan(); }
-    function step(dt) {
-      if (paused) return;
-      if (t < Tend()) { t = Math.min(Tend(), t + dt * speed); }
-      else { hold += dt; if (hold > 0.9) { t = 0; hold = 0; } }
-    }
-    function disk(ctx, cx, cy, s, rot) {
-      ctx.fillStyle = C.surface; ctx.strokeStyle = C['ink-3']; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.arc(cx, cy, s * R, 0, TAU); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = C.line; ctx.lineWidth = 1;
-      for (let k = 1; k < 12; k++) {
-        const a = rot + PHI + k * TAU / 12;
-        ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * s * R, cy - Math.sin(a) * s * R); ctx.stroke();
-      }
-      ctx.beginPath(); ctx.arc(cx, cy, s * R * 0.5, 0, TAU); ctx.stroke();
-      const ma = rot + PHI, mx = cx + Math.cos(ma) * s * R, my = cy - Math.sin(ma) * s * R;
-      ctx.strokeStyle = C.violet; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(mx, my); ctx.stroke();
-      ctx.fillStyle = C.violet; ctx.beginPath(); ctx.arc(mx, my, 6, 0, TAU); ctx.fill();
-    }
-    function ball(ctx, x, y) {
-      ctx.fillStyle = C.accent; ctx.strokeStyle = C.surface; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(x, y, 7, 0, TAU); ctx.fill(); ctx.stroke();
-    }
-    function drawIn() {
-      const w = sI.w, h = sI.h;
-      cI.clearRect(0, 0, w, h);
-      const cx = w / 2, cy = h / 2, s = Math.min(w, h) / 2 - 14;
-      disk(cI, cx, cy, s, Om * t);
-      cI.strokeStyle = C['ink-3']; cI.lineWidth = 1; cI.setLineDash([4, 4]);
-      cI.beginPath(); cI.moveTo(cx, cy); cI.lineTo(cx + Math.cos(PHI) * s * R * 1.1, cy - Math.sin(PHI) * s * R * 1.1); cI.stroke();
-      cI.setLineDash([]);
-      const p = inPos(t, v, PHI), bx = cx + p[0] * s, by = cy - p[1] * s;
-      cI.strokeStyle = C.accent; cI.lineWidth = 2.2; cI.lineCap = 'round';
-      cI.beginPath(); cI.moveTo(cx, cy); cI.lineTo(bx, by); cI.stroke();
-      ball(cI, bx, by);
-    }
-    function drawRot() {
-      const w = sR.w, h = sR.h;
-      cR.clearRect(0, 0, w, h);
-      const cx = w / 2, cy = h / 2, s = Math.min(w, h) / 2 - 14;
-      disk(cR, cx, cy, s, 0);
-      const n = Math.max(2, Math.ceil(t / Tend() * 90));
-      cR.strokeStyle = C.accent; cR.lineWidth = 2.2; cR.lineJoin = 'round'; cR.lineCap = 'round';
-      cR.beginPath();
-      for (let i = 0; i <= n; i++) {
-        const q = rotPos(t * i / n, Om, v, PHI), x = cx + q[0] * s, y = cy - q[1] * s;
-        if (i === 0) cR.moveTo(x, y); else cR.lineTo(x, y);
-      }
-      cR.stroke();
-      const p = rotPos(t, Om, v, PHI), bx = cx + p[0] * s, by = cy - p[1] * s;
-      if (showVec) {
-        const vr = rotVel(t, Om, v, PHI), co = rotCor(vr, Om), ce = rotCen(p, Om);
-        const put = (vec, mag, scale, col) => {
-          if (mag < 1e-9 || scale < 1e-9) return;
-          const L = 0.45 * s * mag / scale;
-          arrow(cR, bx, by, bx + vec[0] / mag * L, by - vec[1] / mag * L, col, 2.2);
-        };
-        put(vr, Math.hypot(vr[0], vr[1]), maxV * 1.5, C.accent);
-        put(co, Math.hypot(co[0], co[1]), maxF, C.warm);
-        put(ce, Math.hypot(ce[0], ce[1]), maxF, C.green);
-      }
-      ball(cR, bx, by);
-    }
-    function readouts() {
-      setText('rt-t', t.toFixed(2) + ' s');
-      setText('rt-ang', (Om * t * 180 / PI).toFixed(0) + '°');
-      setText('rt-dev', (Math.abs(Om) * R / v * 180 / PI).toFixed(0) + '°');
-    }
-    function resize() {
-      const a = fit(cvI), b = fit(cvR);
-      cI = a.ctx; sI = { w: a.w, h: a.h }; cR = b.ctx; sR = { w: b.w, h: b.h };
-    }
-    function frame(dt) { step(dt); drawIn(); drawRot(); readouts(); }
-
-    bindRange('rt-om', (x) => x.toFixed(1) + ' rad/s', (x) => { Om = x; reset(); });
-    bindRange('rt-v', (x) => x.toFixed(1) + ' R/s', (x) => { v = x; reset(); });
-    bindChips('rt-speed', (x) => { speed = x; });
-    $('rt-vec').addEventListener('change', (e) => { showVec = e.target.checked; });
-    $('rt-reset').addEventListener('click', reset);
-    $('rt-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('rt-pause', paused); });
-    setPauseLabel('rt-pause', paused);
-    reset();
-    return { frame: frame, resize: resize };
-  })();
-
-  /* ---------- タブと描画ループ ---------- */
-  const TABS = ['dp', 'ph', 'rot'];
-  const modules = { dp: DP, ph: PH, rot: RT };
-  let active = 'dp';
-  function show(name, focus) {
-    active = name;
-    TABS.forEach((n) => {
-      const sel = n === name, tb = $('tab-' + n);
-      tb.setAttribute('aria-selected', sel ? 'true' : 'false');
-      tb.tabIndex = sel ? 0 : -1;
-      $('panel-' + n).hidden = !sel;
-      if (sel && focus) tb.focus();
-    });
-    modules[name].resize();
-  }
-  TABS.forEach((n, i) => {
-    const tb = $('tab-' + n);
-    tb.addEventListener('click', () => show(n));
-    tb.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight') { e.preventDefault(); show(TABS[(i + 1) % TABS.length], true); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); show(TABS[(i + TABS.length - 1) % TABS.length], true); }
-    });
-  });
-
-  const wrapEl = document.querySelector('.wrap');
-  let lastW = 0;
-  function onResize() {
-    const w = wrapEl.clientWidth;
-    if (w === lastW) return;
-    lastW = w;
-    modules[active].resize();
-  }
-  if (window.ResizeObserver) new ResizeObserver(onResize).observe(wrapEl);
-  window.addEventListener('resize', onResize);
-
-  let last = 0;
-  function frame(ts) {
-    if (!last) last = ts;
-    const dt = Math.min(0.05, (ts - last) / 1000);
-    last = ts;
-    readColors();
-    modules[active].frame(dt);
-    requestAnimationFrame(frame);
-  }
-  readColors();
-  lastW = wrapEl.clientWidth;
-  DP.resize();
-  requestAnimationFrame(frame);
-})();
-</script>
 </body>
 </html>

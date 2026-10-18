@@ -1,0 +1,1120 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>電磁気ラボ | SimPhys</title>
+<meta name="description" content="電場と電位、磁場中の荷電粒子、電磁波を動かして確かめる、学部電磁気のシミュレーション。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* 基本リセット(単体ページ用) */
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: 実験ノートのような1カラム。上に分野タブ、下に「画面 → 操作 → 読み取り方」の順。広い画面では画面と操作を横に並べる。
+   Color: 青みのある灰色の紙面に、青(A・速度)、橙(B・コリオリ力)、緑(遠心力)、紫(目印)を測定色として使う。
+   Type: 本文は Zen Kaku Gothic New、数値は IBM Plex Mono。 */
+:root {
+  --bg: #EEF2F7;
+  --surface: #FFFFFF;
+  --stage: #F6F8FB;
+  --ink: #142033;
+  --ink-2: #4B5D75;
+  --ink-3: #7A8BA1;
+  --line: #D3DBE6;
+  --grid: #E4EAF2;
+  --accent: #2457D6;
+  --accent-ink: #FFFFFF;
+  --warm: #D9620F;
+  --green: #148A66;
+  --violet: #7B45C9;
+  --focus: #2457D6;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1622;
+    --surface: #16212F;
+    --stage: #111B28;
+    --ink: #E7EEF7;
+    --ink-2: #A3B4C8;
+    --ink-3: #74879E;
+    --line: #2A3A4E;
+    --grid: #1F2D3F;
+    --accent: #6F9CFF;
+    --accent-ink: #0E1622;
+    --warm: #FF9B52;
+    --green: #4DD0A3;
+    --violet: #B994FF;
+    --focus: #8DB2FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1622;
+  --surface: #16212F;
+  --stage: #111B28;
+  --ink: #E7EEF7;
+  --ink-2: #A3B4C8;
+  --ink-3: #74879E;
+  --line: #2A3A4E;
+  --grid: #1F2D3F;
+  --accent: #6F9CFF;
+  --accent-ink: #0E1622;
+  --warm: #FF9B52;
+  --green: #4DD0A3;
+  --violet: #B994FF;
+  --focus: #8DB2FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, p, ul, figure { margin: 0; }
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.head { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--ink-2); }
+h1 { font-size: 30px; line-height: 1.3; font-weight: 700; letter-spacing: 0.02em; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 40em; }
+
+.tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+}
+.tab {
+  font: inherit; font-weight: 500; line-height: 1.3; color: var(--ink-2); background: transparent;
+  border: 0; border-radius: 7px; padding: 10px 4px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, input:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px;
+}
+
+.panel { display: flex; flex-direction: column; gap: 18px; }
+.intro { display: flex; flex-direction: column; gap: 6px; }
+h2 { font-size: 20px; line-height: 1.45; font-weight: 700; text-wrap: balance; }
+.intro p { color: var(--ink-2); max-width: 42em; }
+
+.stage-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 820px) {
+  .stage-grid { grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr); }
+}
+.figs { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.figs.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.fig { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fig figcaption {
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+  display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: center;
+}
+.cv { border: 1px solid var(--line); border-radius: 10px; background: var(--stage); overflow: hidden; }
+.cv canvas { display: block; width: 100%; }
+.cv canvas.touchable { touch-action: none; cursor: crosshair; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+.dot.accent { background: var(--accent); }
+.dot.warm { background: var(--warm); }
+.dot.green { background: var(--green); }
+.dot.violet { background: var(--violet); }
+
+.ctrl {
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+}
+.ctrl.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px 22px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .lab { font-size: 13px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.field output { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+input[type="range"] { width: 100%; height: 28px; margin: 0; accent-color: var(--accent); }
+input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.check, .field label.check { display: flex; justify-content: flex-start; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn, .chip {
+  font: inherit; font-size: 13px; line-height: 1.2; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.meter { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; background: var(--stage); border-radius: 8px; min-width: 0; }
+.meter .k { font-size: 11.5px; line-height: 1.4; color: var(--ink-3); }
+.meter .v { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.read { display: flex; flex-direction: column; gap: 12px; max-width: 46em; }
+.read h3 { font-size: 15px; font-weight: 700; }
+.read ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+.read li::marker { color: var(--ink-3); }
+.eq {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 13.5px; line-height: 2;
+}
+.eq .ln { display: block; white-space: nowrap; }
+.eq i { font-style: italic; }
+.foot { font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+.eyebrow a { color: var(--accent); text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 電磁気 · 試作</p>
+    <h1>電磁気ラボ</h1>
+    <p class="lede">式だけだと追いにくい、場の広がりと向きを、動かして確かめるためのページです。静電場、磁場中の荷電粒子、電磁波の3つを試作しました。</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
+    <button class="tab" role="tab" id="tab-ef" aria-controls="panel-ef" aria-selected="true" tabindex="0">電場と電位</button>
+    <button class="tab" role="tab" id="tab-cp" aria-controls="panel-cp" aria-selected="false" tabindex="-1">荷電粒子</button>
+    <button class="tab" role="tab" id="tab-ew" aria-controls="panel-ew" aria-selected="false" tabindex="-1">電磁波</button>
+  </div>
+
+  <!-- 1. 電場と電位 -->
+  <section class="panel" id="panel-ef" role="tabpanel" aria-labelledby="tab-ef">
+    <div class="intro">
+      <h2>電気力線と等電位線は、いつも直角に交わる</h2>
+      <p>電荷を置いたり動かしたりして、電場(力線)と電位(等電位線・色)がどう変わるかを見ます。画面を指でなぞると、その場所の E と V が読めます。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-ef" class="touchable" data-aspect="0.75" role="img" aria-label="点電荷がつくる電気力線と等電位線。橙が正電荷、青が負電荷。"></canvas></div>
+          <figcaption>
+            <span><i class="dot warm"></i>正電荷</span>
+            <span><i class="dot accent"></i>負電荷</span>
+            <span>太線: 電気力線(矢印が E の向き)</span>
+            <span>細線: 等電位線</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>画面をさわったとき</span></span>
+          <div class="btns" id="ef-mode">
+            <button class="chip" data-v="0" aria-pressed="true">動かす</button>
+            <button class="chip" data-v="1" aria-pressed="false">＋を置く</button>
+            <button class="chip" data-v="2" aria-pressed="false">−を置く</button>
+            <button class="chip" data-v="3" aria-pressed="false">消す</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>置く電荷の大きさ</span></span>
+          <div class="btns" id="ef-mag">
+            <button class="chip" data-v="1" aria-pressed="true">1</button>
+            <button class="chip" data-v="2" aria-pressed="false">2</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>はじめの配置</span></span>
+          <div class="btns" id="ef-preset">
+            <button class="chip" data-v="0" aria-pressed="false">双極子</button>
+            <button class="chip" data-v="1" aria-pressed="false">同符号2つ</button>
+            <button class="chip" data-v="2" aria-pressed="false">四重極</button>
+            <button class="chip" data-v="3" aria-pressed="false">2 と −1</button>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" id="ef-lines" checked>電気力線</label>
+        <label class="check"><input type="checkbox" id="ef-eq" checked>等電位線</label>
+        <label class="check"><input type="checkbox" id="ef-heat" checked>電位を色で表示</label>
+        <div class="meters">
+          <div class="meter"><span class="k">電荷の数</span><span class="v" id="ef-n">0</span></div>
+          <div class="meter"><span class="k">電荷の合計</span><span class="v" id="ef-qt">0</span></div>
+          <div class="meter"><span class="k">調べた点の |E|</span><span class="v" id="ef-pe">—</span></div>
+          <div class="meter"><span class="k">調べた点の V</span><span class="v" id="ef-pv">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>力線は正電荷から出て、負電荷に入ります。本数は電荷の大きさに比例させてあり、大きさ 1 のとき 12 本です。</li>
+        <li>等電位線は、力線といつも直角に交わります。等電位線が詰まっているところは電位が急に変わるところで、電場が強いところでもあります。</li>
+        <li>「同符号2つ」にすると、2つの電荷の真ん中に力線のない場所ができます。そこでは E = 0 ですが、V は 0 ではありません。調べて確かめてください。</li>
+        <li>「2 と −1」では、負電荷に入りきらなかった力線が外へ抜けていきます。電荷の合計が 0 でないと、遠くから見て単独の電荷に近づくためです。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>V</i>(<b>r</b>) = Σ <i>q<sub>i</sub></i> / |<b>r</b> − <b>r</b><sub><i>i</i></sub>|</span>
+        <span class="ln"><b>E</b> = −∇<i>V</i> = Σ <i>q<sub>i</sub></i> (<b>r</b> − <b>r</b><sub><i>i</i></sub>) / |<b>r</b> − <b>r</b><sub><i>i</i></sub>|³　(係数 1/4πε<sub>0</sub> = 1)</span>
+      </div>
+      <p class="foot">紙面の上に置いた3次元の点電荷を、その面で切った図です。電荷のすぐ近くは表示のため少しなめらかにしてあります。</p>
+    </div>
+  </section>
+
+  <!-- 2. 荷電粒子 -->
+  <section class="panel" id="panel-cp" role="tabpanel" aria-labelledby="tab-cp" hidden>
+    <div class="intro">
+      <h2>電場と磁場の中で、粒子はなぜ横に流れていくのか</h2>
+      <p>磁場は粒子を円運動させます。そこに電場や磁場の勾配が加わると、円の中心が少しずつ横へずれていきます。これがドリフトです。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-cp" data-aspect="0.8" role="img" aria-label="磁場中の荷電粒子の軌跡。紙面から手前向きの磁場が点で表されている。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>軌跡</span>
+            <span><i class="dot warm"></i>速度</span>
+            <span><i class="dot violet"></i>旋回の中心(案内中心)</span>
+            <span><i class="dot green"></i>電場</span>
+            <span>◎: 紙面から手前向きの磁場(大きいほど強い)</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>はじめの設定</span></span>
+          <div class="btns" id="cp-preset">
+            <button class="chip" data-v="0" aria-pressed="true">円運動</button>
+            <button class="chip" data-v="1" aria-pressed="false">E×B</button>
+            <button class="chip" data-v="2" aria-pressed="false">∇B</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>電荷の符号</span></span>
+          <div class="btns" id="cp-sign">
+            <button class="chip" data-v="1" aria-pressed="true">＋</button>
+            <button class="chip" data-v="-1" aria-pressed="false">−</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="cp-B"><span>磁場の強さ B</span><output id="cp-B-v"></output></label>
+          <input type="range" id="cp-B" min="0.5" max="3" step="0.05" value="1.5">
+        </div>
+        <div class="field">
+          <label for="cp-g"><span>磁場の勾配(上ほど強い)</span><output id="cp-g-v"></output></label>
+          <input type="range" id="cp-g" min="0" max="0.1" step="0.005" value="0">
+        </div>
+        <div class="field">
+          <label for="cp-E"><span>電場の強さ E</span><output id="cp-E-v"></output></label>
+          <input type="range" id="cp-E" min="0" max="1.5" step="0.05" value="0">
+        </div>
+        <div class="field">
+          <label for="cp-Ea"><span>電場の向き</span><output id="cp-Ea-v"></output></label>
+          <input type="range" id="cp-Ea" min="0" max="355" step="5" value="0">
+        </div>
+        <div class="field">
+          <label for="cp-v"><span>はじめの速さ</span><output id="cp-v-v"></output></label>
+          <input type="range" id="cp-v" min="0.2" max="2.5" step="0.1" value="1.2">
+        </div>
+        <div class="field">
+          <label for="cp-va"><span>はじめの向き</span><output id="cp-va-v"></output></label>
+          <input type="range" id="cp-va" min="0" max="355" step="5" value="90">
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="cp-pause">一時停止</button>
+          <button class="btn" id="cp-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">周期 2π/B</span><span class="v" id="cp-T">0</span></div>
+          <div class="meter"><span class="k">旋回半径</span><span class="v" id="cp-r">0</span></div>
+          <div class="meter"><span class="k">ドリフト速度(理論)</span><span class="v" id="cp-vth">0</span></div>
+          <div class="meter"><span class="k">ドリフト速度(測定)</span><span class="v" id="cp-vme">計測中</span></div>
+          <div class="meter"><span class="k">運動エネルギー</span><span class="v" id="cp-ke">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>電場がないとき、粒子は一定の速さで円を描きます。旋回半径は速さに比例しますが、周期は速さによりません。速さのスライダーを動かして確かめてください。</li>
+        <li>「E×B」を選ぶと、粒子は電場の向きではなく、E と B の両方に直角な向きへ流れます。電荷の符号を切り替えても、流れる向きは変わりません。正負で逆向きに流れる、と考えがちなところです。</li>
+        <li>「∇B」を選ぶと、磁場の強い側で円が小さく、弱い側で大きくなるため、円が閉じずにずれていきます。こちらは正負で逆向きに流れます。</li>
+        <li>紫の十字は旋回の中心です。ドリフトとは、この点の動きのことです。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>m</i> d<b>v</b>/d<i>t</i> = <i>q</i> (<b>E</b> + <b>v</b> × <b>B</b>)</span>
+        <span class="ln"><i>r</i> = <i>m v</i>⊥ / (|<i>q</i>| <i>B</i>),　<i>T</i> = 2π<i>m</i> / (|<i>q</i>| <i>B</i>)</span>
+        <span class="ln"><b>v</b><sub>E</sub> = <b>E</b> × <b>B</b> / <i>B</i>²,　<b>v</b><sub>∇B</sub> = (<i>m v</i>⊥² / 2<i>qB</i>) (<b>B</b> × ∇<i>B</i>) / <i>B</i>²</span>
+      </div>
+      <p class="foot">電荷と質量の比を ±1 とした単位で計算しています(m = 1、q = ±1)。磁場は紙面から手前向きです。</p>
+    </div>
+  </section>
+
+  <!-- 3. 電磁波 -->
+  <section class="panel" id="panel-ew" role="tabpanel" aria-labelledby="tab-ew" hidden>
+    <div class="intro">
+      <h2>電場と磁場が、互いを生みながら進んでいく</h2>
+      <p>マクスウェル方程式を1次元でそのまま解いています。波を媒質に入れると、速さと波長が変わり、境界で一部が跳ね返されます。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-ew" data-aspect="0.52" role="img" aria-label="右へ進む電磁波の電場(青)と磁場(橙)の波形。紫の帯が媒質。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>電場 E</span>
+            <span><i class="dot warm"></i>磁場 B</span>
+            <span><i class="dot violet"></i>媒質(屈折率 n)</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-3d" data-aspect="0.5" role="img" aria-label="電場が上下、磁場が奥行き方向を向き、右へ進む波を斜めから見た図。"></canvas></div>
+          <figcaption>同じ波を斜めから見た図です。E は上下、B は手前と奥、進む向きは右で、3つは互いに直角です。</figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>波の種類</span></span>
+          <div class="btns" id="ew-kind">
+            <button class="chip" data-v="0" aria-pressed="true">連続波</button>
+            <button class="chip" data-v="1" aria-pressed="false">波束</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>媒質</span></span>
+          <div class="btns" id="ew-med">
+            <button class="chip" data-v="0" aria-pressed="false">なし</button>
+            <button class="chip" data-v="1" aria-pressed="true">厚い媒質</button>
+            <button class="chip" data-v="2" aria-pressed="false">薄い膜</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="ew-n"><span>屈折率 n</span><output id="ew-n-v"></output></label>
+          <input type="range" id="ew-n" min="1.2" max="3" step="0.1" value="2">
+        </div>
+        <div class="field" id="ew-m-field">
+          <label for="ew-m"><span>膜の厚さ(媒質中の波長の何倍か)</span><output id="ew-m-v"></output></label>
+          <input type="range" id="ew-m" min="0.1" max="1" step="0.05" value="0.25">
+        </div>
+        <div class="field">
+          <label for="ew-l"><span>真空中の波長</span><output id="ew-l-v"></output></label>
+          <input type="range" id="ew-l" min="20" max="60" step="2" value="40">
+        </div>
+        <div class="field">
+          <span class="lab"><span>再生速度</span></span>
+          <div class="btns" id="ew-speed">
+            <button class="chip" data-v="1" aria-pressed="true">×1</button>
+            <button class="chip" data-v="2" aria-pressed="false">×2</button>
+            <button class="chip" data-v="4" aria-pressed="false">×4</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="ew-pause">一時停止</button>
+          <button class="btn" id="ew-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">媒質中の速さ</span><span class="v" id="ew-vm">—</span></div>
+          <div class="meter"><span class="k">媒質中の波長</span><span class="v" id="ew-lm">—</span></div>
+          <div class="meter"><span class="k">反射率(理論)</span><span class="v" id="ew-R">—</span></div>
+          <div class="meter"><span class="k">透過率(理論)</span><span class="v" id="ew-T">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>E(青)と B(橙)はいつも同じ位相で、進む向きとは直角です。E の向きから B の向きへ右ねじを回したとき、ねじの進む向きが波の進む向き(E × B)です。</li>
+        <li>媒質に入ると、周波数はそのままで、速さが c/n、波長が λ/n になります。波が詰まって見えるのはそのためです。</li>
+        <li>厚い媒質の境界では、反射率 ((n−1)/(n+1))² の分だけ跳ね返されます。n = 2 なら約 11%、n = 3 なら 25% です。</li>
+        <li>「薄い膜」で厚さを 0.5 や 1.0 にすると反射がなくなり、0.25 や 0.75 にすると反射が最大になります。表と裏で反射した波が、重なって強め合ったり打ち消し合ったりするためです(薄膜干渉)。</li>
+        <li>媒質の中では、B の振幅が E の n 倍になっています。波形の高さの違いに注目してください。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln">∂<i>B<sub>z</sub></i>/∂<i>t</i> = −∂<i>E<sub>y</sub></i>/∂<i>x</i></span>
+        <span class="ln"><i>ε</i> ∂<i>E<sub>y</sub></i>/∂<i>t</i> = −∂<i>H<sub>z</sub></i>/∂<i>x</i>　(<i>c</i> = 1/√(<i>εμ</i>),　<i>n</i> = √<i>ε</i>)</span>
+      </div>
+      <p class="foot">1次元の差分法(FDTD)で、E と H をずらした格子の上で交互に更新しています。波束のときの反射率は、波長の幅が狭い場合の近似です。</p>
+    </div>
+  </section>
+
+  <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const $ = (id) => document.getElementById(id);
+  const PI = Math.PI;
+  const TAU = 2 * Math.PI;
+  const MONO = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  const RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* PHYSICS-BEGIN */
+  // ---- 静電場(k = 1)。紙面内に置いた3次元の点電荷として、E = q r̂ / r^2, V = q / r ----
+  const SOFT = 0.03;
+  function efield(Q, x, y) {
+    let ex = 0, ey = 0;
+    for (const c of Q) {
+      const dx = x - c.x, dy = y - c.y;
+      const r2 = dx * dx + dy * dy + SOFT * SOFT;
+      const r3 = r2 * Math.sqrt(r2);
+      ex += c.q * dx / r3; ey += c.q * dy / r3;
+    }
+    return [ex, ey];
+  }
+  function potential(Q, x, y) {
+    let v = 0;
+    for (const c of Q) {
+      const dx = x - c.x, dy = y - c.y;
+      v += c.q / Math.sqrt(dx * dx + dy * dy + SOFT * SOFT);
+    }
+    return v;
+  }
+  function fdir(Q, x, y, sgn) {
+    const e = efield(Q, x, y), m = Math.hypot(e[0], e[1]);
+    return m < 1e-12 ? [0, 0] : [sgn * e[0] / m, sgn * e[1] / m];
+  }
+  // 電気力線を1本たどる。sgn=+1 は E の向き、-1 は逆向き。逆符号の電荷に着いたら 'hit'、領域の外に出たら 'out'。
+  function traceLine(Q, x0, y0, sgn, bnd, ds, maxN) {
+    const pts = [[x0, y0]];
+    let x = x0, y = y0, end = 'max';
+    for (let n = 0; n < maxN; n++) {
+      const d1 = fdir(Q, x, y, sgn);
+      if (d1[0] === 0 && d1[1] === 0) { end = 'out'; break; }
+      const d2 = fdir(Q, x + 0.5 * ds * d1[0], y + 0.5 * ds * d1[1], sgn);
+      x += ds * d2[0]; y += ds * d2[1];
+      pts.push([x, y]);
+      if (x < bnd.x0 || x > bnd.x1 || y < bnd.y0 || y > bnd.y1) { end = 'out'; break; }
+      let hit = false;
+      for (const c of Q) {
+        if (c.q * sgn < 0 && Math.hypot(x - c.x, y - c.y) < 0.075) { hit = true; break; }
+      }
+      if (hit) { end = 'hit'; break; }
+    }
+    return { pts: pts, end: end };
+  }
+  // 電荷 |q| に比例した本数の力線。正電荷からは順向きに、負電荷からは逆向きにたどり、
+  // 負電荷側は「正電荷に届かず外へ抜けるもの」だけ残す(同じ線を二重に描かないため)。
+  function fieldLines(Q, nPer, bnd) {
+    const lines = [];
+    for (const c of Q) {
+      if (c.q === 0) continue;
+      const sgn = c.q > 0 ? 1 : -1;
+      const n = Math.max(1, Math.round(nPer * Math.abs(c.q)));
+      const a0 = 0.31;
+      for (let k = 0; k < n; k++) {
+        const a = a0 + 2 * Math.PI * k / n;
+        const L = traceLine(Q, c.x + 0.06 * Math.cos(a), c.y + 0.06 * Math.sin(a), sgn, bnd, 0.03, 700);
+        if (sgn < 0 && L.end === 'hit') continue;
+        lines.push(sgn < 0 ? L.pts.reverse() : L.pts);   // 常に E の向きに並べる
+      }
+    }
+    return lines;
+  }
+  // 電位の格子値(行優先、nx × ny)
+  function potGrid(Q, nx, ny, bnd) {
+    const V = new Float32Array(nx * ny);
+    for (let j = 0; j < ny; j++) {
+      const y = bnd.y0 + (bnd.y1 - bnd.y0) * j / (ny - 1);
+      for (let i = 0; i < nx; i++) {
+        const x = bnd.x0 + (bnd.x1 - bnd.x0) * i / (nx - 1);
+        V[j * nx + i] = potential(Q, x, y);
+      }
+    }
+    return V;
+  }
+  // マーチングスクエア法で V = lv の等高線の線分を返す(格子座標)
+  const MS_TABLE = {
+    1: [[3, 0]], 2: [[0, 1]], 3: [[3, 1]], 4: [[1, 2]], 5: [[3, 0], [1, 2]], 6: [[0, 2]], 7: [[3, 2]],
+    8: [[2, 3]], 9: [[0, 2]], 10: [[0, 1], [2, 3]], 11: [[1, 2]], 12: [[1, 3]], 13: [[0, 1]], 14: [[3, 0]]
+  };
+  function contours(V, nx, ny, lv) {
+    const segs = [];
+    for (let j = 0; j < ny - 1; j++) {
+      for (let i = 0; i < nx - 1; i++) {
+        const a = V[j * nx + i] - lv, b = V[j * nx + i + 1] - lv;
+        const c = V[(j + 1) * nx + i + 1] - lv, d = V[(j + 1) * nx + i] - lv;
+        const idx = (a > 0 ? 1 : 0) | (b > 0 ? 2 : 0) | (c > 0 ? 4 : 0) | (d > 0 ? 8 : 0);
+        if (idx === 0 || idx === 15) continue;
+        const e = [
+          [i + a / (a - b), j],
+          [i + 1, j + b / (b - c)],
+          [i + d / (d - c), j + 1],
+          [i, j + a / (a - d)]
+        ];
+        for (const pr of MS_TABLE[idx]) segs.push([e[pr[0]][0], e[pr[0]][1], e[pr[1]][0], e[pr[1]][1]]);
+      }
+    }
+    return segs;
+  }
+
+  // ---- 一様でない磁場中の荷電粒子(m = 1、q = ±1)。B は +z(紙面から手前)。Boris 法 ----
+  // 状態 p = {x, y, vx, vy}。Bz(y) = B0 (1 + g y)(下限 0.1 B0)。
+  function bField(B0, g, y) { return B0 * Math.max(0.1, 1 + g * y); }
+  function borisStep(p, h, qm, E, B0, g) {
+    const B = bField(B0, g, p.y);
+    const hx = 0.5 * h * qm * E[0], hy = 0.5 * h * qm * E[1];
+    const vmx = p.vx + hx, vmy = p.vy + hy;
+    const t = 0.5 * h * qm * B, s = 2 * t / (1 + t * t);
+    const vpx = vmx + vmy * t, vpy = vmy - vmx * t;
+    const vnx = vmx + vpy * s, vny = vmy - vpx * s;
+    p.vx = vnx + hx; p.vy = vny + hy;
+    p.x += p.vx * h; p.y += p.vy * h;
+  }
+
+  // ---- 1次元の電磁波(FDTD)。E = Ey、B = Hz(Z0 = 1 の規格化)、+x 向きに進む。eps は比誘電率 ----
+  function fdtdMake(N, S) {
+    return { N: N, S: S, ey: new Float64Array(N), hz: new Float64Array(N), eps: new Float64Array(N).fill(1), t: 0 };
+  }
+  function fdtdStep(f, src) {
+    const N = f.N, S = f.S, ey = f.ey, hz = f.hz, eps = f.eps;
+    const e1 = ey[1], e0 = ey[0], eN2 = ey[N - 2], eN1 = ey[N - 1];
+    for (let i = 0; i < N - 1; i++) hz[i] -= S * (ey[i + 1] - ey[i]);
+    for (let i = 1; i < N; i++) ey[i] -= (S / eps[i]) * (hz[i] - hz[i - 1]);
+    ey[f.srcI] += src;
+    // 1次の Mur 吸収境界(右端は端の媒質の屈折率を使う)
+    const k0 = (S - 1) / (S + 1);
+    ey[0] = e1 + k0 * (ey[1] - e0);
+    const Sn = S / Math.sqrt(eps[N - 1]), kN = (Sn - 1) / (Sn + 1);
+    ey[N - 1] = eN2 + kN * (ey[N - 2] - eN1);
+    f.t += 1;
+  }
+  // 理論値: 真空 → 屈折率 n の境界の反射率、真空に挟まれた厚さ d(= m × 媒質中の波長)の膜の反射率
+  function interfaceR(n) { const r = (n - 1) / (n + 1); return r * r; }
+  function slabR(n, m) {
+    const r = (n - 1) / (n + 1), s = Math.sin(2 * Math.PI * m);
+    const num = 4 * r * r * s * s, den = (1 - r * r) * (1 - r * r) + num;
+    return num / den;
+  }
+  /* PHYSICS-END */
+
+  /* ---------- 共通 ---------- */
+  const C = {};
+  const COLOR_KEYS = ['ink', 'ink-2', 'ink-3', 'line', 'grid', 'accent', 'warm', 'green', 'violet', 'stage', 'surface'];
+  let colorSig = '';
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    let sig = '';
+    for (const k of COLOR_KEYS) { C[k] = cs.getPropertyValue('--' + k).trim(); sig += C[k]; }
+    const changed = sig !== colorSig;
+    colorSig = sig;
+    return changed;
+  }
+  function rgb(hex) {
+    const h = hex.replace('#', '');
+    const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    return [parseInt(f.slice(0, 2), 16), parseInt(f.slice(2, 4), 16), parseInt(f.slice(4, 6), 16)];
+  }
+  function fit(cv) {
+    const w = Math.max(200, cv.parentElement.clientWidth);
+    const h = Math.round(w * parseFloat(cv.dataset.aspect));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.height = h + 'px';
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+  function setText(id, s) { const el = $(id); if (el && el.textContent !== s) el.textContent = s; }
+  function bindRange(id, fmtFn, onChange) {
+    const el = $(id), out = $(id + '-v');
+    const upd = () => { out.innerHTML = fmtFn(+el.value); };
+    el.addEventListener('input', () => { upd(); onChange(+el.value); });
+    upd();
+  }
+  function bindChips(groupId, onPick) {
+    const chips = $(groupId).querySelectorAll('.chip');
+    chips.forEach((ch) => {
+      ch.addEventListener('click', () => {
+        chips.forEach((o) => o.setAttribute('aria-pressed', o === ch ? 'true' : 'false'));
+        onPick(parseFloat(ch.dataset.v));
+      });
+    });
+  }
+  function setChip(groupId, v) {
+    $(groupId).querySelectorAll('.chip').forEach((o) => o.setAttribute('aria-pressed', parseFloat(o.dataset.v) === v ? 'true' : 'false'));
+  }
+  function setRange(id, v) {
+    const el = $(id); el.value = v;
+    el.dispatchEvent(new Event('input'));
+  }
+  function arrow(ctx, x0, y0, x1, y1, col, lw) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 2) return;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const ux = dx / L, uy = dy / L, hl = Math.min(10, L * 0.55), hw = hl * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * hl - uy * hw, y1 - uy * hl + ux * hw);
+    ctx.lineTo(x1 - ux * hl + uy * hw, y1 - uy * hl - ux * hw);
+    ctx.closePath(); ctx.fill();
+  }
+  function setPauseLabel(btnId, paused) { $(btnId).textContent = paused ? '再開' : '一時停止'; }
+  function fmt(x, d) { return (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d); }
+
+  /* ---------- 1. 電場と電位 ---------- */
+  const EF = (function () {
+    const BX = 2;                       // 世界座標の横幅は [-2, 2]
+    const NX = 160;
+    const cv = $('cv-ef');
+    const heat = document.createElement('canvas');
+    let c, W = 0, Hh = 0, scale = 1, bnd = { x0: -2, x1: 2, y0: -1.5, y1: 1.5 };
+    let Q = [], lines = [], V = null, NY = 120, segs = [];
+    let mode = 0, mag = 1, dirty = true, drag = -1, probe = null;
+    const LEVELS = [-6, -4, -3, -2, -1.5, -1, -0.75, -0.5, -0.3, 0, 0.3, 0.5, 0.75, 1, 1.5, 2, 3, 4, 6];
+    const PRESETS = [
+      [{ x: -0.6, y: 0, q: 1 }, { x: 0.6, y: 0, q: -1 }],
+      [{ x: -0.6, y: 0, q: 1 }, { x: 0.6, y: 0, q: 1 }],
+      [{ x: -0.5, y: -0.5, q: 1 }, { x: 0.5, y: -0.5, q: -1 }, { x: 0.5, y: 0.5, q: 1 }, { x: -0.5, y: 0.5, q: -1 }],
+      [{ x: -0.6, y: 0, q: 2 }, { x: 0.6, y: 0, q: -1 }]
+    ];
+
+    function toPx(x, y) { return [(x - bnd.x0) * scale, (bnd.y1 - y) * scale]; }
+    function toWorld(px, py) { return [bnd.x0 + px / scale, bnd.y1 - py / scale]; }
+
+    function recompute() {
+      lines = $('ef-lines').checked ? fieldLines(Q, 12, bnd) : [];
+      NY = Math.round(NX * (bnd.y1 - bnd.y0) / (bnd.x1 - bnd.x0)) + 1;
+      V = potGrid(Q, NX, NY, bnd);
+      segs = [];
+      if ($('ef-eq').checked && Q.length) for (const lv of LEVELS) segs.push({ lv: lv, s: contours(V, NX, NY, lv) });
+      dirty = true;
+      updateMeters();
+    }
+    function updateMeters() {
+      setText('ef-n', String(Q.length));
+      const qt = Q.reduce((a, b) => a + b.q, 0);
+      setText('ef-qt', (qt > 0 ? '+' : '') + qt);
+      if (probe) {
+        const e = efield(Q, probe[0], probe[1]);
+        setText('ef-pe', Q.length ? Math.hypot(e[0], e[1]).toFixed(2) : '0');
+        setText('ef-pv', Q.length ? fmt(potential(Q, probe[0], probe[1]), 2) : '0');
+      } else { setText('ef-pe', '—'); setText('ef-pv', '—'); }
+    }
+
+    function draw() {
+      c.clearRect(0, 0, W, Hh);
+      c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      // 電位の色
+      if ($('ef-heat').checked && V && Q.length) {
+        const hc = heat, hx = hc.getContext('2d');
+        const img = hx.createImageData(NX, NY), d = img.data;
+        const wm = rgb(C.warm), ac = rgb(C.accent);
+        for (let i = 0; i < NX * NY; i++) {
+          const v = V[i], a = Math.min(0.5, Math.abs(Math.tanh(v / 2.2)) * 0.55);
+          const col = v > 0 ? wm : ac;
+          d[4 * i] = col[0]; d[4 * i + 1] = col[1]; d[4 * i + 2] = col[2]; d[4 * i + 3] = Math.round(255 * a);
+        }
+        hx.putImageData(img, 0, 0);
+        c.imageSmoothingEnabled = true;
+        c.drawImage(hc, 0, 0, NX, NY, 0, 0, W, Hh);
+      }
+      // 等電位線
+      if (segs.length) {
+        const sx = W / (NX - 1), sy = Hh / (NY - 1);
+        for (const g of segs) {
+          c.strokeStyle = C['ink-3']; c.globalAlpha = g.lv === 0 ? 0.9 : 0.6; c.lineWidth = g.lv === 0 ? 1.4 : 1;
+          c.setLineDash(g.lv === 0 ? [5, 4] : []);
+          c.beginPath();
+          for (const s of g.s) { c.moveTo(s[0] * sx, s[1] * sy); c.lineTo(s[2] * sx, s[3] * sy); }
+          c.stroke();
+        }
+        c.setLineDash([]); c.globalAlpha = 1;
+      }
+      // 電気力線
+      c.strokeStyle = C.ink; c.fillStyle = C.ink; c.lineWidth = 1.6; c.lineJoin = 'round';
+      for (const L of lines) {
+        c.beginPath();
+        for (let i = 0; i < L.length; i++) { const p = toPx(L[i][0], L[i][1]); if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }
+        c.stroke();
+        // 矢印(長さの半分あたり)
+        if (L.length > 12) {
+          const m = Math.floor(L.length * 0.5), a = toPx(L[m - 1][0], L[m - 1][1]), b = toPx(L[m + 1][0], L[m + 1][1]);
+          const dx = b[0] - a[0], dy = b[1] - a[1], n = Math.hypot(dx, dy) || 1, ux = dx / n, uy = dy / n, p = toPx(L[m][0], L[m][1]);
+          c.beginPath(); c.moveTo(p[0] + ux * 5, p[1] + uy * 5);
+          c.lineTo(p[0] - ux * 4 - uy * 3.6, p[1] - uy * 4 + ux * 3.6);
+          c.lineTo(p[0] - ux * 4 + uy * 3.6, p[1] - uy * 4 - ux * 3.6); c.closePath(); c.fill();
+        }
+      }
+      // 調べた点
+      if (probe && Q.length) {
+        const p = toPx(probe[0], probe[1]), e = efield(Q, probe[0], probe[1]), m = Math.hypot(e[0], e[1]);
+        c.strokeStyle = C.violet; c.lineWidth = 1.6;
+        c.beginPath(); c.moveTo(p[0] - 7, p[1]); c.lineTo(p[0] + 7, p[1]); c.moveTo(p[0], p[1] - 7); c.lineTo(p[0], p[1] + 7); c.stroke();
+        if (m > 1e-9) { const len = Math.min(56, 14 + 22 * Math.log10(1 + m)); arrow(c, p[0], p[1], p[0] + e[0] / m * len, p[1] - e[1] / m * len, C.violet, 2.4); }
+      }
+      // 電荷
+      for (const q of Q) {
+        const p = toPx(q.x, q.y), r = 10 + 3 * (Math.abs(q.q) - 1);
+        c.fillStyle = q.q > 0 ? C.warm : C.accent;
+        c.beginPath(); c.arc(p[0], p[1], r, 0, TAU); c.fill();
+        c.strokeStyle = C.surface; c.lineWidth = 2; c.stroke();
+        c.strokeStyle = C.surface; c.lineWidth = 2; c.lineCap = 'round';
+        c.beginPath(); c.moveTo(p[0] - 4, p[1]); c.lineTo(p[0] + 4, p[1]);
+        if (q.q > 0) { c.moveTo(p[0], p[1] - 4); c.lineTo(p[0], p[1] + 4); }
+        c.stroke();
+        if (Math.abs(q.q) > 1) { c.fillStyle = C.ink; c.font = MONO; c.textAlign = 'left'; c.textBaseline = 'middle'; c.fillText(String(Math.abs(q.q)), p[0] + r + 3, p[1]); }
+      }
+      if (!Q.length) {
+        c.fillStyle = C['ink-3']; c.font = '13px "Zen Kaku Gothic New", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText('「＋を置く」「−を置く」で電荷を置いてください', W / 2, Hh / 2);
+      }
+    }
+
+    function nearest(wx, wy, maxPx) {
+      let best = -1, bd = maxPx / scale;
+      Q.forEach((q, i) => { const d = Math.hypot(q.x - wx, q.y - wy); if (d < bd) { bd = d; best = i; } });
+      return best;
+    }
+    function evPos(e) {
+      const r = cv.getBoundingClientRect();
+      return toWorld((e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * (Hh / r.height));
+    }
+    function clampW(p) { return [Math.max(bnd.x0 + 0.05, Math.min(bnd.x1 - 0.05, p[0])), Math.max(bnd.y0 + 0.05, Math.min(bnd.y1 - 0.05, p[1]))]; }
+    cv.addEventListener('pointerdown', (e) => {
+      const p = evPos(e);
+      if (mode === 0) {
+        const i = nearest(p[0], p[1], 26);
+        if (i >= 0) { drag = i; cv.setPointerCapture(e.pointerId); }
+        else { probe = p; cv.setPointerCapture(e.pointerId); drag = -2; updateMeters(); dirty = true; }
+      } else if (mode === 1 || mode === 2) {
+        if (Q.length < 8) { const w = clampW(p); Q.push({ x: w[0], y: w[1], q: (mode === 1 ? 1 : -1) * mag }); recompute(); }
+      } else if (mode === 3) {
+        const i = nearest(p[0], p[1], 30);
+        if (i >= 0) { Q.splice(i, 1); recompute(); }
+      }
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (drag === -1) return;
+      const p = evPos(e);
+      if (drag >= 0) { const w = clampW(p); Q[drag].x = w[0]; Q[drag].y = w[1]; recompute(); }
+      else { probe = p; updateMeters(); dirty = true; }
+    });
+    const endDrag = () => { drag = -1; };
+    cv.addEventListener('pointerup', endDrag);
+    cv.addEventListener('pointercancel', endDrag);
+
+    bindChips('ef-mode', (v) => { mode = v; });
+    bindChips('ef-mag', (v) => { mag = v; });
+    bindChips('ef-preset', (v) => {
+      Q = PRESETS[v].map((q) => ({ x: q.x, y: q.y, q: q.q }));
+      recompute();
+    });
+    ['ef-lines', 'ef-eq', 'ef-heat'].forEach((id) => $(id).addEventListener('change', recompute));
+
+    function resize() {
+      const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h;
+      scale = W / (2 * BX);
+      bnd = { x0: -BX, x1: BX, y0: -Hh / scale / 2, y1: Hh / scale / 2 };
+      heat.width = NX; heat.height = Math.round(NX * Hh / W) + 1;
+      // 画面の高さが変わったら範囲外の電荷を戻す
+      Q.forEach((q) => { const w = clampW([q.x, q.y]); q.x = w[0]; q.y = w[1]; });
+      recompute();
+    }
+    function frame() { if (dirty) { dirty = false; draw(); } }
+    function invalidate() { dirty = true; }
+    Q = PRESETS[0].map((q) => ({ x: q.x, y: q.y, q: q.q }));
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 2. 磁場中の荷電粒子 ---------- */
+  const CP = (function () {
+    const cv = $('cv-cp');
+    const VIEW = 14;           // 画面の横幅(世界の長さ)
+    const RATE = 3;            // 実時間 1 秒あたりの計算時間
+    let c, W = 0, Hh = 0, scale = 1;
+    let p, t, qm = 1, trail, gcs, cam, h, paused = RM, speed = 1, simAcc = 0;
+    let B0 = 1.5, g = 0, Em = 0, Ea = 0, v0 = 1.2, va = 90;
+
+    function Evec() { const a = Ea * PI / 180; return [Em * Math.cos(a), Em * Math.sin(a)]; }
+    function gcOf(q) { const B = bField(B0, g, q.y); return [q.x + q.vy / (qm * B), q.y - q.vx / (qm * B)]; }
+    function reset() {
+      const a = va * PI / 180;
+      p = { x: 0, y: 0, vx: v0 * Math.cos(a), vy: v0 * Math.sin(a) };
+      t = 0; h = 0.04 / B0; simAcc = 0;
+      trail = [[0, 0]];
+      gcs = [];
+      const gc0 = gcOf(p); gcs.push([0, gc0[0], gc0[1]]);
+      cam = [gc0[0], gc0[1]];
+      theory();
+    }
+    // 案内中心のドリフト速度の理論値(E×B と ∇B の和)
+    function theory() {
+      const E = Evec(), gc = gcOf(p), Bl = bField(B0, g, gc[1]);
+      const vE = [E[1] / Bl, -E[0] / Bl];
+      const ux = p.vx - vE[0], uy = p.vy - vE[1], u2 = ux * ux + uy * uy;
+      const gB = g / Math.max(0.1 / 1, 1 + g * gc[1]);
+      const vG = [-u2 / (2 * qm * Bl) * gB, 0];
+      return { vE: vE, vG: vG, u: Math.sqrt(u2), Bl: Bl, sum: [vE[0] + vG[0], vE[1] + vG[1]] };
+    }
+    function measured() {
+      const Tn = Math.round(2 * PI / B0 / h);
+      if (gcs.length < 2 * Tn + 2) return null;
+      const n = gcs.length;
+      let ax = 0, ay = 0, bx = 0, by = 0;
+      for (let i = n - Tn; i < n; i++) { ax += gcs[i][1]; ay += gcs[i][2]; }
+      for (let i = n - 2 * Tn; i < n - Tn; i++) { bx += gcs[i][1]; by += gcs[i][2]; }
+      const dt = Tn * h;
+      return [(ax - bx) / Tn / dt, (ay - by) / Tn / dt];
+    }
+    function advance(dt) {
+      const E = Evec();
+      simAcc += dt * RATE * speed;
+      let guard = 0;
+      while (simAcc >= h && guard++ < 400) {
+        borisStep(p, h, qm, E, B0, g);
+        t += h; simAcc -= h;
+        const gc = gcOf(p);
+        trail.push([p.x, p.y]); gcs.push([t, gc[0], gc[1]]);
+        if (trail.length > 2500) trail.shift();
+        if (gcs.length > 4000) gcs.shift();
+      }
+    }
+
+    function draw(dt) {
+      const gc = gcOf(p);
+      cam[0] += (gc[0] - cam[0]) * Math.min(1, 5 * dt);
+      cam[1] += (gc[1] - cam[1]) * Math.min(1, 5 * dt);
+      const sx = (x) => W / 2 + (x - cam[0]) * scale, sy = (y) => Hh / 2 - (y - cam[1]) * scale;
+      c.clearRect(0, 0, W, Hh);
+      c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      // 磁場の記号(大きさが B の強さ)
+      const x0 = Math.floor(cam[0] - VIEW / 2 - 1), x1 = Math.ceil(cam[0] + VIEW / 2 + 1);
+      const ysp = VIEW * Hh / W, y0 = Math.floor(cam[1] - ysp / 2 - 1), y1 = Math.ceil(cam[1] + ysp / 2 + 1);
+      c.strokeStyle = C['ink-3']; c.fillStyle = C['ink-3']; c.lineWidth = 1; c.globalAlpha = 0.6;
+      for (let gx = x0; gx <= x1; gx++) {
+        if (gx % 2) continue;
+        for (let gy = y0; gy <= y1; gy++) {
+          if (gy % 2) continue;
+          const rB = 5 * bField(B0, g, gy) / B0 * Math.min(1.4, 0.55 + 0.3 * B0);
+          c.beginPath(); c.arc(sx(gx), sy(gy), Math.max(2, rB), 0, TAU); c.stroke();
+          c.beginPath(); c.arc(sx(gx), sy(gy), 1.4, 0, TAU); c.fill();
+        }
+      }
+      c.globalAlpha = 1;
+      // 軌跡
+      c.strokeStyle = C.accent; c.lineWidth = 2; c.lineJoin = 'round';
+      c.beginPath();
+      for (let i = 0; i < trail.length; i++) { const X = sx(trail[i][0]), Y = sy(trail[i][1]); if (i) c.lineTo(X, Y); else c.moveTo(X, Y); }
+      c.stroke();
+      // 案内中心
+      const gX = sx(gc[0]), gY = sy(gc[1]);
+      c.strokeStyle = C.violet; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(gX - 6, gY); c.lineTo(gX + 6, gY); c.moveTo(gX, gY - 6); c.lineTo(gX, gY + 6); c.stroke();
+      const th = theory();
+      const dm = Math.hypot(th.sum[0], th.sum[1]);
+      if (dm > 0.005) arrow(c, gX, gY, gX + th.sum[0] / dm * Math.min(70, 20 + 120 * dm), gY - th.sum[1] / dm * Math.min(70, 20 + 120 * dm), C.violet, 2.4);
+      // 粒子と速度
+      const pX = sx(p.x), pY = sy(p.y), sp = Math.hypot(p.vx, p.vy);
+      arrow(c, pX, pY, pX + p.vx / (sp || 1) * Math.min(60, 16 + 18 * sp), pY - p.vy / (sp || 1) * Math.min(60, 16 + 18 * sp), C.warm, 2.6);
+      c.fillStyle = qm > 0 ? C.warm : C.accent; c.strokeStyle = C.surface; c.lineWidth = 2;
+      c.beginPath(); c.arc(pX, pY, 7, 0, TAU); c.fill(); c.stroke();
+      c.strokeStyle = C.surface; c.lineWidth = 1.6; c.beginPath(); c.moveTo(pX - 3, pY); c.lineTo(pX + 3, pY); if (qm > 0) { c.moveTo(pX, pY - 3); c.lineTo(pX, pY + 3); } c.stroke();
+      // 電場の矢印(左上の凡例)
+      if (Em > 0.001) {
+        const E = Evec(), L = 18 + 30 * Em / 1.5;
+        c.fillStyle = C.green; c.font = MONO; c.textAlign = 'left'; c.textBaseline = 'top';
+        c.fillText('E', 14, 10);
+        arrow(c, 38, 34, 38 + E[0] / Em * L, 34 - E[1] / Em * L, C.green, 3);
+      }
+      c.fillStyle = C['ink-3']; c.font = MONO; c.textAlign = 'right'; c.textBaseline = 'bottom';
+      c.fillText('B(手前向き)' + (g > 0 ? ' 上ほど強い' : ''), W - 10, Hh - 8);
+    }
+    function meters() {
+      const th = theory(), m = measured();
+      setText('cp-T', (2 * PI / th.Bl).toFixed(2));
+      setText('cp-r', (th.u / th.Bl).toFixed(2));
+      setText('cp-vth', Math.hypot(th.sum[0], th.sum[1]).toFixed(3));
+      setText('cp-vme', m ? Math.hypot(m[0], m[1]).toFixed(3) : '計測中');
+      setText('cp-ke', (0.5 * (p.vx * p.vx + p.vy * p.vy)).toFixed(2));
+    }
+
+    bindChips('cp-sign', (v) => { qm = v; reset(); });
+    bindChips('cp-preset', (v) => {
+      if (v === 0) { setRange('cp-E', 0); setRange('cp-g', 0); setRange('cp-v', 1.2); setRange('cp-va', 90); setRange('cp-B', 1.5); }
+      if (v === 1) { setRange('cp-E', 0.6); setRange('cp-Ea', 0); setRange('cp-g', 0); setRange('cp-v', 0.8); setRange('cp-va', 90); setRange('cp-B', 1.5); }
+      if (v === 2) { setRange('cp-E', 0); setRange('cp-g', 0.08); setRange('cp-v', 1.5); setRange('cp-va', 0); setRange('cp-B', 1.5); }
+      reset();
+    });
+    bindRange('cp-B', (v) => v.toFixed(2), (v) => { B0 = v; reset(); });
+    bindRange('cp-g', (v) => v.toFixed(3), (v) => { g = v; reset(); });
+    bindRange('cp-E', (v) => v.toFixed(2), (v) => { Em = v; reset(); });
+    bindRange('cp-Ea', (v) => v + '°', (v) => { Ea = v; reset(); });
+    bindRange('cp-v', (v) => v.toFixed(1), (v) => { v0 = v; reset(); });
+    bindRange('cp-va', (v) => v + '°', (v) => { va = v; reset(); });
+    $('cp-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('cp-pause', paused); });
+    $('cp-reset').addEventListener('click', reset);
+    setPauseLabel('cp-pause', paused);
+
+    function resize() { const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; scale = W / VIEW; }
+    function frame(dt) { if (!paused) advance(dt); draw(dt); meters(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 3. 電磁波 ---------- */
+  const EW = (function () {
+    const N = 480, S = 0.5, X0 = 240, SRC = 40;
+    const cvA = $('cv-ew'), cvB = $('cv-3d');
+    let cA, cB, sA = { w: 0, h: 0 }, sB = { w: 0, h: 0 };
+    let f, kind = 0, med = 1, n = 2, m = 0.25, lam = 40, paused = RM, speed = 1, acc = 0, k = 0, thick = 0;
+    const UNIT = 0.3;          // 振幅 1 の高さ(画面の高さに対する割合)
+
+    function reset() {
+      f = fdtdMake(N, S); f.srcI = SRC; k = 0; acc = 0;
+      thick = med === 1 ? N - X0 : (med === 2 ? Math.max(2, Math.round(m * lam / n)) : 0);
+      if (med !== 0) for (let i = X0; i < X0 + thick && i < N; i++) f.eps[i] = n * n;
+      meters();
+    }
+    function source() {
+      const w = TAU * S / lam, per = lam / S;
+      if (kind === 0) return Math.sin(w * k) * Math.min(1, k / (3 * per));
+      const sg = 1.1 * per, t0 = 3.2 * per;
+      return Math.exp(-Math.pow((k - t0) / sg, 2)) * Math.sin(w * k);
+    }
+    function advance(dt) {
+      acc += dt * 240 * speed;
+      let ns = Math.floor(acc); acc -= ns;
+      while (ns-- > 0) { fdtdStep(f, source()); k++; }
+    }
+    function meters() {
+      if (med === 0) { setText('ew-vm', 'c'); setText('ew-lm', '—'); setText('ew-R', '0 %'); setText('ew-T', '100 %'); return; }
+      const R = med === 1 ? interfaceR(n) : slabR(n, m);
+      setText('ew-vm', 'c / ' + n.toFixed(1));
+      setText('ew-lm', 'λ / ' + n.toFixed(1) + ' (' + (lam / n).toFixed(1) + ')');
+      setText('ew-R', (100 * R).toFixed(1) + ' %');
+      setText('ew-T', (100 * (1 - R)).toFixed(1) + ' %');
+    }
+
+    function drawWave() {
+      const W = sA.w, H = sA.h, y0 = H / 2, A = UNIT * H, sx = W / (N - 1);
+      cA.clearRect(0, 0, W, H);
+      cA.fillStyle = C.stage; cA.fillRect(0, 0, W, H);
+      if (med !== 0 && thick > 0) {
+        cA.fillStyle = C.violet; cA.globalAlpha = 0.14;
+        cA.fillRect(X0 * sx, 0, Math.min(thick, N - X0) * sx, H);
+        cA.globalAlpha = 1;
+        cA.fillStyle = C.violet; cA.font = MONO; cA.textAlign = 'left'; cA.textBaseline = 'top';
+        cA.fillText('n = ' + n.toFixed(1), X0 * sx + 6, 6);
+      }
+      cA.strokeStyle = C.line; cA.lineWidth = 1;
+      cA.beginPath(); cA.moveTo(0, y0); cA.lineTo(W, y0); cA.stroke();
+      cA.save(); cA.beginPath(); cA.rect(0, 0, W, H); cA.clip();
+      const curve = (arr, col) => {
+        cA.strokeStyle = col; cA.lineWidth = 2; cA.lineJoin = 'round'; cA.beginPath();
+        for (let i = 0; i < N; i++) { const X = i * sx, Y = y0 - arr[i] * A; if (i) cA.lineTo(X, Y); else cA.moveTo(X, Y); }
+        cA.stroke();
+      };
+      curve(f.hz, C.warm);
+      curve(f.ey, C.accent);
+      cA.restore();
+      cA.fillStyle = C['ink-3']; cA.font = MONO; cA.textAlign = 'right'; cA.textBaseline = 'bottom';
+      cA.fillText('進む向き →', W - 8, H - 6);
+    }
+    function draw3d() {
+      const W = sB.w, H = sB.h, y0 = H * 0.5, x00 = 14, x1 = W - 14, sx = (x1 - x00) / (N - 1), U = UNIT * H * 0.95;
+      const kx = -0.55 * U, ky = 0.42 * U;       // 手前向き(z)の単位ベクトルが画面でどちらを向くか
+      cB.clearRect(0, 0, W, H);
+      cB.fillStyle = C.stage; cB.fillRect(0, 0, W, H);
+      // 媒質の枠
+      if (med !== 0 && thick > 0) {
+        const a = x00 + X0 * sx, b = x00 + Math.min(N - 1, X0 + thick) * sx;
+        cB.fillStyle = C.violet; cB.globalAlpha = 0.14; cB.fillRect(a, 0, b - a, H); cB.globalAlpha = 1;
+      }
+      cB.strokeStyle = C.line; cB.lineWidth = 1;
+      cB.beginPath(); cB.moveTo(x00, y0); cB.lineTo(x1, y0); cB.stroke();
+      const step = 12;
+      for (let i = 2; i < N - 2; i += step) {
+        const X = x00 + i * sx, e = f.ey[i], b = f.hz[i];
+        // B(奥行き)を先に、E(上下)を後に
+        arrow(cB, X, y0, X + b * kx, y0 + b * ky, C.warm, 1.8);
+        arrow(cB, X, y0, X, y0 - e * U, C.accent, 1.8);
+      }
+      // 包絡線(E)
+      cB.strokeStyle = C.accent; cB.globalAlpha = 0.55; cB.lineWidth = 1.4; cB.beginPath();
+      for (let i = 0; i < N; i += 2) { const X = x00 + i * sx, Y = y0 - f.ey[i] * U; if (i) cB.lineTo(X, Y); else cB.moveTo(X, Y); }
+      cB.stroke();
+      cB.strokeStyle = C.warm; cB.beginPath();
+      for (let i = 0; i < N; i += 2) { const X = x00 + i * sx + f.hz[i] * kx, Y = y0 + f.hz[i] * ky; if (i) cB.lineTo(X, Y); else cB.moveTo(X, Y); }
+      cB.stroke(); cB.globalAlpha = 1;
+      // 軸の凡例
+      cB.font = MONO; cB.textBaseline = 'middle';
+      cB.fillStyle = C.accent; cB.textAlign = 'left'; cB.fillText('E(上下)', 8, 14);
+      cB.fillStyle = C.warm; cB.fillText('B(手前・奥)', 8, 30);
+      cB.fillStyle = C['ink-2']; cB.textAlign = 'right'; cB.fillText('E × B → 進む向き', W - 8, H - 12);
+    }
+
+    bindChips('ew-kind', (v) => { kind = v; reset(); });
+    bindChips('ew-med', (v) => { med = v; $('ew-m-field').hidden = v !== 2; reset(); });
+    bindChips('ew-speed', (v) => { speed = v; });
+    bindRange('ew-n', (v) => v.toFixed(1), (v) => { n = v; reset(); });
+    bindRange('ew-m', (v) => v.toFixed(2), (v) => { m = v; reset(); });
+    bindRange('ew-l', (v) => v + ' セル', (v) => { lam = v; reset(); });
+    $('ew-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('ew-pause', paused); });
+    $('ew-reset').addEventListener('click', reset);
+    setPauseLabel('ew-pause', paused);
+    $('ew-m-field').hidden = med !== 2;
+
+    function resize() { const a = fit(cvA); cA = a.ctx; sA = a; const b = fit(cvB); cB = b.ctx; sB = b; }
+    function frame(dt) { if (!paused) advance(dt); drawWave(); draw3d(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- タブと描画ループ ---------- */
+  const TABS = ['ef', 'cp', 'ew'];
+  const modules = { ef: EF, cp: CP, ew: EW };
+  let active = 'ef';
+  function show(name, focus) {
+    active = name;
+    TABS.forEach((nm) => {
+      const sel = nm === name, tb = $('tab-' + nm);
+      tb.setAttribute('aria-selected', sel ? 'true' : 'false');
+      tb.tabIndex = sel ? 0 : -1;
+      $('panel-' + nm).hidden = !sel;
+      if (sel && focus) tb.focus();
+    });
+    modules[name].resize();
+  }
+  TABS.forEach((nm, i) => {
+    const tb = $('tab-' + nm);
+    tb.addEventListener('click', () => show(nm));
+    tb.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight') { e.preventDefault(); show(TABS[(i + 1) % TABS.length], true); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); show(TABS[(i + TABS.length - 1) % TABS.length], true); }
+    });
+  });
+
+  const wrapEl = document.querySelector('.wrap');
+  let lastW = 0;
+  function onResize() {
+    const w = wrapEl.clientWidth;
+    if (w === lastW) return;
+    lastW = w;
+    modules[active].resize();
+  }
+  if (window.ResizeObserver) new ResizeObserver(onResize).observe(wrapEl);
+  window.addEventListener('resize', onResize);
+
+  let last = 0;
+  function frame(ts) {
+    if (!last) last = ts;
+    const dt = Math.min(0.05, (ts - last) / 1000);
+    last = ts;
+    if (readColors()) modules[active].invalidate();
+    modules[active].frame(dt);
+    requestAnimationFrame(frame);
+  }
+  readColors();
+  lastW = wrapEl.clientWidth;
+  EF.resize();
+  requestAnimationFrame(frame);
+})();
+</script>
+</body></html>
