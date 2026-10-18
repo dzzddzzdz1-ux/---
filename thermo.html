@@ -171,6 +171,16 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
 .sitenav a:hover { color: var(--accent); text-decoration: underline; }
 .sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.more { display: flex; flex-direction: column; gap: 10px; max-width: 46em; border-top: 1px solid var(--line); padding-top: 16px; }
+.more h3 { font-size: 15px; font-weight: 700; margin-top: 6px; }
+.more p { color: var(--ink-2); font-size: 14.5px; line-height: 1.85; }
+.more ol { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.more dl.qa dt { font-weight: 700; font-size: 14.5px; }
+.more dl.qa dt::before { content: 'Q. '; color: var(--accent); font-family: var(--font-mono); }
+.more dl.qa dd { margin: 2px 0 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa dd::before { content: 'A. '; color: var(--warm); font-family: var(--font-mono); }
 </style>
 </head>
 <body>
@@ -272,6 +282,26 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
       </div>
       <p class="foot">質量 m = 1、ボルツマン定数 k = 1 の単位で、2次元の気体を計算しています。圧力は、壁が受けた運動量を、直近の時間と壁の長さで割って求めています。</p>
     </div>
+  
+    <div class="more" data-more="tg">
+      <h3>もう少し詳しく</h3>
+      <p>気体の温度は、粒子の平均運動エネルギーそのものです(2次元では kT = m⟨v²⟩/2)。全員が同じ速さで始めても、衝突のたびにエネルギーがやり取りされ、やがて速さの分布が一定の形、マクスウェル分布に落ち着きます。この形は、初期条件によらず決まります。</p>
+      <p>圧力は、粒子が壁にぶつかって、壁に与える運動量の平均です。粒子が速いほど、また多いほど強くなり、面積が小さいほど強くなるので、P = NkT/A です。箱を狭めると圧力が上がるのが、ボイルの法則です。</p>
+      <p>実際の気体では、粒子に大きさがあるので、動ける面積がその分だけ減り、圧力が理想気体の値より少し高くなります。画面の「P ÷ 理想気体の値」が 1 より少し大きいのは、このためです。この補正を取り入れたのが、ファンデルワールスの式です。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「加熱」を押して、分布が右へずれて広がるのを見ます。ピークの位置は、√(kT) に比例します。</li>
+        <li>粒子の数 N を増やして、圧力が N に比例して増えるのを見ます。</li>
+        <li>箱の幅を半分にします。温度が同じなら、圧力は約 2 倍になります。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>温度が高いと、全員が速いのですか。</dt>
+        <dd>平均が大きくなるだけで、速い粒子も遅い粒子もいます。マクスウェル分布は、その広がりを表しています。</dd>
+        <dt>2次元の気体は、現実と違いますか。</dt>
+        <dd>分布の式は 3 次元と少し違いますが、温度・圧力・衝突によってこの分布へ落ち着く、という考え方は同じです。</dd>
+      </dl>
+    </div>
   </section>
 
   <!-- 2. イジング模型 -->
@@ -353,6 +383,26 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
       </div>
       <p class="foot">J = k = 1 の単位で、メトロポリス法(一つのスピンを選んで、エネルギーが下がるなら反転、上がるなら確率 e<sup>−ΔE/T</sup> で反転)で更新しています。格子が有限なので、T<sub>c</sub> のすぐ近くでは厳密解からずれます。</p>
     </div>
+  
+    <div class="more" data-more="ti">
+      <h3>もう少し詳しく</h3>
+      <p>隣どうしが同じ向きだとエネルギーが下がるので、低温では全員が揃うほうが有利です。一方、高温では、熱ゆらぎでスピンがばらばらになるほうが、状態の数が多く、有利です。2つのせめぎ合いが、臨界温度 T<sub>c</sub> ≈ 2.269 で入れ替わります。</p>
+      <p>T<sub>c</sub> の近くでは、さまざまな大きさの領域が現れ、ゆらぎが大きくなり、反応も鈍くなります(臨界ゆらぎ、臨界緩和)。この性質は、水が沸騰する点や、磁石がその性質を失う点など、一見無関係な系の相転移でも共通して見られます。</p>
+      <p>外場 h があると、T<sub>c</sub> を越えても磁化が残り、相転移は滑らかになります。このモデルの2次元の厳密解は、オンサガーが 1944 年に得たもので、統計力学の大きな成果の1つです。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>T = 1.5 から始めて「全部上向き」を選びます。ほとんど変化せず、揃ったままです。</li>
+        <li>T = 2.3 付近で、領域がゆらぎ続ける様子を見ます。</li>
+        <li>低温で h を加え、符号を逆にします。磁化がひっくり返る様子が見られます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>メトロポリス法は、現実の時間を表しますか。</dt>
+        <dd>表しません。1回の更新の数は、現実の時間に対応しません。ただし、状態が出現する確率は、正しい統計(ボルツマン分布)になります。</dd>
+        <dt>格子が有限でも、相転移は起きますか。</dt>
+        <dd>厳密には、無限に大きい系でのみ、はっきりした転移が現れます。有限の格子では、T<sub>c</sub> 付近がなだらかにぼやけます。</dd>
+      </dl>
+    </div>
   </section>
 
   <!-- 3. エントロピー -->
@@ -421,6 +471,26 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
         <span class="ln"><i>S</i> = <i>k</i> ln <i>W</i>,　<i>S</i><sub>max</sub> = <i>k</i> ln <i>W</i>(<i>n<sub>L</sub></i> = <i>N</i>/2)</span>
       </div>
       <p class="foot">相互作用のない粒子が、壁と仕切りで反射するだけのモデルです。「仕切りを入れる」で再び仕切ると、そのときの偏りのまま閉じ込められます。</p>
+    </div>
+  
+    <div class="more" data-more="te">
+      <h3>もう少し詳しく</h3>
+      <p>ボルツマンは、エントロピーを S = k ln W と書きました。W は、ある巨視的な状態(ここでは左にいる粒子の数)に対応する、粒子の配置の数です。左右に半分ずつ分かれる配置は、全部が左にある配置よりも、はるかに数が多いので、仕切りを外すと、そちらへ移っていくのが圧倒的に起こりやすいのです。</p>
+      <p>つまり、エントロピーが増える向きに進むのは、力が働くためではなく、確率の問題です。ただし、粒子の数が少ないと、一度混ざった後でも、偏りに戻ることがよくあります。N が増えると、戻る確率は、天文学的に小さくなります。</p>
+      <p>仕切りを外す前の状態へ自然に戻るのが、とても不可能に近いことが、時間の向きの感覚(熱力学の第2法則)を生んでいます。ミクロな運動方程式は、時間を逆にしても成り立つのに、巨視的には一方向にしか進まないように見えるのは、このためです。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>N = 6 で、仕切りを外します。左右の数が、何度も大きく偏ります。</li>
+        <li>N = 200 で同じことをします。ほとんど半分ずつのままで、ほぼ動きません。</li>
+        <li>N = 10 で、偏った瞬間に仕切りを入れます。そのときの左右の数のまま、固定されます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>エントロピーは必ず増えるのですか。</dt>
+        <dd>孤立した巨視的な系では、ほぼ必ず増えます。粒子が少ない系では、一時的に減ることもあります。第2法則は、統計的な法則です。</dd>
+        <dt>エントロピーは「乱雑さ」ですか。</dt>
+        <dd>日常の言葉に近いたとえですが、より正確には、その巨視的な状態に対応する、ミクロな状態の数の対数です。</dd>
+      </dl>
     </div>
   </section>
 
@@ -530,12 +600,17 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
       modules[name].resize();
       modules[name].invalidate();
     }
+    function go(name, focus, fromHash) {
+      show(name, focus);
+      if (!fromHash) { try { history.replaceState(null, '', '#' + name); } catch (e) { location.hash = name; } }
+    }
+    window.addEventListener('hashchange', () => { const n = location.hash.slice(1); if (TABS.indexOf(n) >= 0 && n !== active) go(n, false, true); });
     TABS.forEach((nm, i) => {
       const tb = $('tab-' + nm);
-      tb.addEventListener('click', () => show(nm));
+      tb.addEventListener('click', () => go(nm));
       tb.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowRight') { e.preventDefault(); show(TABS[(i + 1) % TABS.length], true); }
-        else if (e.key === 'ArrowLeft') { e.preventDefault(); show(TABS[(i + TABS.length - 1) % TABS.length], true); }
+        if (e.key === 'ArrowRight') { e.preventDefault(); go(TABS[(i + 1) % TABS.length], true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); go(TABS[(i + TABS.length - 1) % TABS.length], true); }
       });
     });
     const wrapEl = document.querySelector('.wrap');
@@ -560,7 +635,8 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     }
     readColors();
     lastW = wrapEl.clientWidth;
-    modules[active].resize();
+    const n0 = location.hash.slice(1);
+    if (TABS.indexOf(n0) > 0) show(n0); else modules[active].resize();
     requestAnimationFrame(frame);
   }
 

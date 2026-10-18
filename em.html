@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>電磁気ラボ | SimPhys</title>
-<meta name="description" content="電場と電位、磁場中の荷電粒子、電磁波を動かして確かめる、学部電磁気のシミュレーション。">
+<meta name="description" content="電場と電位、磁場中の荷電粒子、電磁波と薄膜干渉を動かして確かめる、学部電磁気学のシミュレーション。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
@@ -171,6 +171,16 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 .sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
 .sitenav a:hover { color: var(--accent); text-decoration: underline; }
 .sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.more { display: flex; flex-direction: column; gap: 10px; max-width: 46em; border-top: 1px solid var(--line); padding-top: 16px; }
+.more h3 { font-size: 15px; font-weight: 700; margin-top: 6px; }
+.more p { color: var(--ink-2); font-size: 14.5px; line-height: 1.85; }
+.more ol { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.more dl.qa dt { font-weight: 700; font-size: 14.5px; }
+.more dl.qa dt::before { content: 'Q. '; color: var(--accent); font-family: var(--font-mono); }
+.more dl.qa dd { margin: 2px 0 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa dd::before { content: 'A. '; color: var(--warm); font-family: var(--font-mono); }
 </style>
 </head>
 <body>
@@ -258,6 +268,26 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
         <span class="ln"><b>E</b> = −∇<i>V</i> = Σ <i>q<sub>i</sub></i> (<b>r</b> − <b>r</b><sub><i>i</i></sub>) / |<b>r</b> − <b>r</b><sub><i>i</i></sub>|³　(係数 1/4πε<sub>0</sub> = 1)</span>
       </div>
       <p class="foot">紙面の上に置いた3次元の点電荷を、その面で切った図です。電荷のすぐ近くは表示のため少しなめらかにしてあります。</p>
+    </div>
+  
+    <div class="more" data-more="ef">
+      <h3>もう少し詳しく</h3>
+      <p>点電荷のまわりの電場は E = q/r² (ここでは比例定数を 1 としています)で、複数の電荷では、それぞれの電場のベクトルの和になります(重ね合わせの原理)。電気力線は、各点で電場の向きを接線とする線で、正電荷から出て負電荷に入り、途中で枝分かれも交差もしません。</p>
+      <p>電位は V = q/r で、足し算だけで求まります。電場と電位は E = −∇V で結ばれていて、電場は電位が最も急に下がる向きを向き、その向きは等電位線に直角です。等電位線が混んでいるところは、電位が急に変わるところなので、電場が強いところです。</p>
+      <p>同符号の電荷では、電荷の間に電場がゼロの点ができ、そこで力線がよけ合います。正負が近い双極子では、遠くの電場は 1/r³ で急速に弱まります。これは正負の電場が打ち消し合うからで、四重極では、さらに打ち消しが進みます。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「双極子」を選び、電荷を近づけたり離したりします。遠くの力線が、どう変わるでしょうか。</li>
+        <li>「同符号2つ」で、2つの電荷の真ん中あたりの電位を見ます。電場がゼロでも、電位はゼロではありません。</li>
+        <li>「2 と −1」を選びます。力線は、大きいほうから出て、半分が無限遠へ向かいます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>力線の本数に意味はありますか。</dt>
+        <dd>ここでは、電荷の大きさに比例した本数を引いています。力線の混み具合は、3次元では電場の強さに対応しますが、紙面の上では目安です。</dd>
+        <dt>電位が高いところに、正電荷を置くとどうなりますか。</dt>
+        <dd>電位の低いほうへ、力線に沿って動きます。ちょうど、斜面の上のボールのように考えられます。</dd>
+      </dl>
     </div>
   </section>
 
@@ -351,6 +381,26 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
       </div>
       <p class="foot">電荷と質量の比を ±1 とした単位で計算しています(m = 1、q = ±1)。磁場は紙面から手前向きです。</p>
     </div>
+  
+    <div class="more" data-more="cp">
+      <h3>もう少し詳しく</h3>
+      <p>磁場だけがあると、荷電粒子は磁場に垂直な面内で円運動をします。回転の角振動数はサイクロトロン角振動数 ω<sub>c</sub> = qB/m、半径は r = mv/(qB) で、粒子の速さが違っても、1周にかかる時間は同じです。</p>
+      <p>力 <b>F</b> が加わると、円運動の中心(ガイディングセンター)が、<b>F</b>×<b>B</b> の向きに、速さ F/(qB) で流れていきます。これがドリフトです。電場なら、ドリフトの速さは E/B となり、電荷の符号にも、質量にもよりません。そのため、E×B ドリフトでは、＋と−が同じ向きに流れます。</p>
+      <p>磁場に勾配があると、磁場が強いところでは回転半径が小さく、弱いところでは大きくなります。そのため、1周するたびに少しずつずれて、全体として横へ流れます(∇B ドリフト)。この場合は、＋と−が逆向きに流れます。これらは、核融合のプラズマの閉じ込めや、オーロラが生じる地球の磁気圏の理解に欠かせません。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「E×B」を選び、＋と−を切り替えます。どちらも同じ向きに流れます。</li>
+        <li>「∇B」を選び、＋と−を切り替えます。今度は逆向きに流れます。</li>
+        <li>磁場 B を強くします。円は小さくなり、E×B ドリフトの速さは E/B に従って遅くなります。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>粒子はなぜ、電場の向きには進まないのですか。</dt>
+        <dd>電場で加速しても、速くなると円の半径が大きくなって、磁場に曲げられるからです。1周のあいだに、加速と減速が打ち消し合うため、電場の向きには進まず、垂直に流れます。</dd>
+        <dt>磁場は粒子に仕事をしますか。</dt>
+        <dd>しません。磁場の力は速度に垂直なので、速さは変わりません。</dd>
+      </dl>
+    </div>
   </section>
 
   <!-- 3. 電磁波 -->
@@ -439,6 +489,26 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
         <span class="ln"><i>ε</i> ∂<i>E<sub>y</sub></i>/∂<i>t</i> = −∂<i>H<sub>z</sub></i>/∂<i>x</i>　(<i>c</i> = 1/√(<i>εμ</i>),　<i>n</i> = √<i>ε</i>)</span>
       </div>
       <p class="foot">1次元の差分法(FDTD)で、E と H をずらした格子の上で交互に更新しています。波束のときの反射率は、波長の幅が狭い場合の近似です。</p>
+    </div>
+  
+    <div class="more" data-more="ew">
+      <h3>もう少し詳しく</h3>
+      <p>変化する磁場は電場を生み(ファラデーの法則)、変化する電場は磁場を生みます(マクスウェルの補正項)。この2つが互いを生みながら、真空中を速さ c = 1/√(ε<sub>0</sub>μ<sub>0</sub>) で進むのが電磁波です。電場と磁場は、進む向きに垂直で、同じ位相で振動します。</p>
+      <p>屈折率 n の媒質では、波の速さは c/n になり、波長は 1/n に縮みます(振動数は変わりません)。境界では、波の一部が反射し、反射率は ((n−1)/(n+1))² です。n = 1.5 のガラスなら約 4% で、屈折率が高い側で反射すると、位相が π だけ反転します。</p>
+      <p>薄い膜では、上の面で反射した波と、下の面で反射した波が重なって、干渉します。膜の厚さが、媒質中の波長のちょうど半分の整数倍のときは、2つの反射が打ち消し合い、反射率がゼロになります(反射防止膜は、屈折率と厚さを選んで、この打ち消しを利用しています)。1/4 波長の奇数倍のときは、反射が最大になります。シャボン玉や油膜が色づくのは、波長ごとに干渉の条件が違うからです。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「連続波」で、「厚い媒質」を選びます。媒質に入ると、波長が短くなる様子が見えます。</li>
+        <li>「薄い膜」で、厚さを 0.5 倍にします。反射がほぼゼロになります。0.25 倍では、反射が最大になります。</li>
+        <li>屈折率 n を大きくして、境界での反射が増えるのを確かめます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>電場と磁場のどちらが先に生まれるのですか。</dt>
+        <dd>どちらが先ということはなく、互いを生みながら進んでいきます。波源がまず電流や電荷の運動として現れ、その周りに電磁波が広がります。</dd>
+        <dt>反射した波が、反対向きに進むのはなぜですか。</dt>
+        <dd>境界の両側で、電場と磁場がなめらかにつながる条件を満たすには、反射する波が必要だからです。</dd>
+      </dl>
     </div>
   </section>
 
@@ -1087,12 +1157,17 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     });
     modules[name].resize();
   }
+  function go(name, focus, fromHash) {
+    show(name, focus);
+    if (!fromHash) { try { history.replaceState(null, '', '#' + name); } catch (e) { location.hash = name; } }
+  }
+  window.addEventListener('hashchange', () => { const n = location.hash.slice(1); if (TABS.indexOf(n) >= 0 && n !== active) go(n, false, true); });
   TABS.forEach((nm, i) => {
     const tb = $('tab-' + nm);
-    tb.addEventListener('click', () => show(nm));
+    tb.addEventListener('click', () => go(nm));
     tb.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight') { e.preventDefault(); show(TABS[(i + 1) % TABS.length], true); }
-      else if (e.key === 'ArrowLeft') { e.preventDefault(); show(TABS[(i + TABS.length - 1) % TABS.length], true); }
+      if (e.key === 'ArrowRight') { e.preventDefault(); go(TABS[(i + 1) % TABS.length], true); }
+      else if (e.key === 'ArrowLeft') { e.preventDefault(); go(TABS[(i + TABS.length - 1) % TABS.length], true); }
     });
   });
 
@@ -1118,7 +1193,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
   }
   readColors();
   lastW = wrapEl.clientWidth;
-  EF.resize();
+  { const n0 = location.hash.slice(1); if (TABS.indexOf(n0) > 0) show(n0); else EF.resize(); }
   requestAnimationFrame(frame);
 })();
 </script>
