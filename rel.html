@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>特殊相対論ラボ | SimPhys</title>
+<meta name="description" content="光時計と時間の遅れ、ミンコフスキー図とローレンツ変換、一定の力での相対論的な加速を動かして確かめる、学部の特殊相対論のシミュレーション。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* 基本リセット(単体ページ用) */
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: 実験ノートのような1カラム。上に分野タブ、下に「画面 → 操作 → 読み取り方」の順。広い画面では画面と操作を横に並べる。
+   Color: 青みのある灰色の紙面に、青(A・速度)、橙(B・コリオリ力)、緑(遠心力)、紫(目印)を測定色として使う。
+   Type: 本文は Zen Kaku Gothic New、数値は IBM Plex Mono。 */
+:root {
+  --bg: #EEF2F7;
+  --surface: #FFFFFF;
+  --stage: #F6F8FB;
+  --ink: #142033;
+  --ink-2: #4B5D75;
+  --ink-3: #7A8BA1;
+  --line: #D3DBE6;
+  --grid: #E4EAF2;
+  --accent: #2457D6;
+  --accent-ink: #FFFFFF;
+  --warm: #D9620F;
+  --green: #148A66;
+  --violet: #7B45C9;
+  --focus: #2457D6;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1622;
+    --surface: #16212F;
+    --stage: #111B28;
+    --ink: #E7EEF7;
+    --ink-2: #A3B4C8;
+    --ink-3: #74879E;
+    --line: #2A3A4E;
+    --grid: #1F2D3F;
+    --accent: #6F9CFF;
+    --accent-ink: #0E1622;
+    --warm: #FF9B52;
+    --green: #4DD0A3;
+    --violet: #B994FF;
+    --focus: #8DB2FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1622;
+  --surface: #16212F;
+  --stage: #111B28;
+  --ink: #E7EEF7;
+  --ink-2: #A3B4C8;
+  --ink-3: #74879E;
+  --line: #2A3A4E;
+  --grid: #1F2D3F;
+  --accent: #6F9CFF;
+  --accent-ink: #0E1622;
+  --warm: #FF9B52;
+  --green: #4DD0A3;
+  --violet: #B994FF;
+  --focus: #8DB2FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, p, ul, figure { margin: 0; }
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.head { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--ink-2); }
+h1 { font-size: 30px; line-height: 1.3; font-weight: 700; letter-spacing: 0.02em; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 40em; }
+
+.tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+}
+.tab {
+  font: inherit; font-weight: 500; line-height: 1.3; color: var(--ink-2); background: transparent;
+  border: 0; border-radius: 7px; padding: 10px 4px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, input:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px;
+}
+
+.panel { display: flex; flex-direction: column; gap: 18px; }
+.intro { display: flex; flex-direction: column; gap: 6px; }
+h2 { font-size: 20px; line-height: 1.45; font-weight: 700; text-wrap: balance; }
+.intro p { color: var(--ink-2); max-width: 42em; }
+
+.stage-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 820px) {
+  .stage-grid { grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr); }
+}
+.figs { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.figs.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.fig { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fig figcaption {
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+  display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: center;
+}
+.cv { border: 1px solid var(--line); border-radius: 10px; background: var(--stage); overflow: hidden; }
+.cv canvas { display: block; width: 100%; }
+.cv canvas.touchable { touch-action: none; cursor: crosshair; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+.dot.accent { background: var(--accent); }
+.dot.warm { background: var(--warm); }
+.dot.green { background: var(--green); }
+.dot.violet { background: var(--violet); }
+
+.ctrl {
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+}
+.ctrl.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px 22px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .lab { font-size: 13px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.field output { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+input[type="range"] { width: 100%; height: 28px; margin: 0; accent-color: var(--accent); }
+input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.check, .field label.check { display: flex; justify-content: flex-start; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn, .chip {
+  font: inherit; font-size: 13px; line-height: 1.2; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.meter { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; background: var(--stage); border-radius: 8px; min-width: 0; }
+.meter .k { font-size: 11.5px; line-height: 1.4; color: var(--ink-3); }
+.meter .v { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.read { display: flex; flex-direction: column; gap: 12px; max-width: 46em; }
+.read h3 { font-size: 15px; font-weight: 700; }
+.read ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+.read li::marker { color: var(--ink-3); }
+.eq {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 13.5px; line-height: 2;
+}
+.eq .ln { display: block; white-space: nowrap; }
+.eq i { font-style: italic; }
+.foot { font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+.eyebrow a { color: var(--accent); text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
+.sitenav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding-top: 4px; border-top: 1px solid var(--line); }
+.sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
+.sitenav a:hover { color: var(--accent); text-decoration: underline; }
+.sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.more { display: flex; flex-direction: column; gap: 10px; max-width: 46em; border-top: 1px solid var(--line); padding-top: 16px; }
+.more h3 { font-size: 15px; font-weight: 700; margin-top: 6px; }
+.more p { color: var(--ink-2); font-size: 14.5px; line-height: 1.85; }
+.more ol { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.more dl.qa dt { font-weight: 700; font-size: 14.5px; }
+.more dl.qa dt::before { content: 'Q. '; color: var(--accent); font-family: var(--font-mono); }
+.more dl.qa dd { margin: 2px 0 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa dd::before { content: 'A. '; color: var(--warm); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 特殊相対論 · 試作</p>
+    <h1>特殊相対論ラボ</h1>
+    <p class="lede">「光の速さは、誰から見ても同じ」という1つの原理から、時間の遅れ、同時刻の食い違い、速さの上限が導かれます。光時計、ミンコフスキー図、一定の力での加速の3つで確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
+    <button class="tab" role="tab" id="tab-rt" aria-controls="panel-rt" aria-selected="true" tabindex="0">光時計</button>
+    <button class="tab" role="tab" id="tab-rm" aria-controls="panel-rm" aria-selected="false" tabindex="-1">時空図</button>
+    <button class="tab" role="tab" id="tab-rp" aria-controls="panel-rp" aria-selected="false" tabindex="-1">加速</button>
+  </div>
+
+  <!-- 1. 光時計 -->
+  <section class="panel" id="panel-rt" role="tabpanel" aria-labelledby="tab-rt">
+    <div class="intro">
+      <h2>動いている時計は、ゆっくり進む</h2>
+      <p>2枚の鏡の間を光が往復するだけの「光時計」を使います。光の速さは、どの人から見ても同じです。そのため、動く時計の中の光は、地上から見ると長い道のりを進み、1往復に長くかかります。</p>
+    </div>
+    <div class="figs pair">
+      <figure class="fig">
+        <figcaption>
+          <span><i class="dot accent"></i>地上の時計(静止)</span>
+          <span><i class="dot warm"></i>動く時計(その時計の上の人が見るとき)</span>
+        </figcaption>
+        <div class="cv"><canvas id="cv-rt" data-aspect="0.66" role="img" aria-label="静止した光時計と、動く光時計の目盛りの進み方の比較。"></canvas></div>
+      </figure>
+      <figure class="fig">
+        <figcaption>地上から見た、動く時計の中の光の道のり(青い線)</figcaption>
+        <div class="cv"><canvas id="cv-rtl" data-aspect="0.66" role="img" aria-label="地上から見ると、光がジグザグの長い道のりを進む。"></canvas></div>
+      </figure>
+    </div>
+    <div class="ctrl cols">
+      <div class="field">
+        <label for="rt-b"><span>動く時計の速さ <i>β</i> = <i>v</i>/<i>c</i></span><output id="rt-b-v"></output></label>
+        <input type="range" id="rt-b" min="0" max="0.99" step="0.01" value="0.8">
+      </div>
+      <div class="field">
+        <span class="lab"><span>よく使う速さ</span></span>
+        <div class="btns" id="rt-pre">
+          <button class="chip" data-v="0.6" aria-pressed="false">0.6</button>
+          <button class="chip" data-v="0.8" aria-pressed="true">0.8</button>
+          <button class="chip" data-v="0.9" aria-pressed="false">0.9</button>
+          <button class="chip" data-v="0.99" aria-pressed="false">0.99</button>
+        </div>
+      </div>
+      <div class="field">
+        <span class="lab"><span>再生速度</span></span>
+        <div class="btns" id="rt-speed">
+          <button class="chip" data-v="0.5" aria-pressed="false">×0.5</button>
+          <button class="chip" data-v="1" aria-pressed="true">×1</button>
+          <button class="chip" data-v="2" aria-pressed="false">×2</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="btns">
+          <button class="btn primary" id="rt-pause">一時停止</button>
+          <button class="btn" id="rt-reset">最初から</button>
+        </div>
+      </div>
+      <div class="meters">
+        <div class="meter"><span class="k">ローレンツ因子 γ</span><span class="v" id="rt-g"></span></div>
+        <div class="meter"><span class="k">地上の時計の目盛り</span><span class="v" id="rt-n0"></span></div>
+        <div class="meter"><span class="k">動く時計の目盛り</span><span class="v" id="rt-n1"></span></div>
+        <div class="meter"><span class="k">ミューオンの見かけの寿命</span><span class="v" id="rt-mu"></span></div>
+      </div>
+    </div>
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>左の絵では、動く時計の光が、地上の時計より、ゆっくり往復します。右の絵は、その理由です。地上から見ると、動く時計の光は斜めに進み、道のりが長くなります。光の速さは変わらないので、往復にかかる時間が長くなります。</li>
+        <li>鏡の間隔を <i>h</i> とすると、地上から見た片道の時間は <i>t</i> = γ<i>h</i>/<i>c</i> です(下の式を解いたものです)。つまり、動く時計の1目盛りは、地上の時計の γ 目盛り分に相当します。</li>
+        <li>速さが小さいうちは、γ はほぼ 1 で、違いは感じられません。<i>β</i> = 0.99 では、γ ≈ 7.1 になります。</li>
+        <li>寿命が約 2.2 マイクロ秒のミューオンが、上空で生まれて地上まで届くのは、この効果のためです。地上から見ると、ミューオンの寿命は γ 倍に延びています。</li>
+      </ul>
+      <div class="eq" aria-label="時間の遅れの式">
+        <span class="ln">(<i>ct</i>)² = <i>h</i>² + (<i>vt</i>)²　⟹　<i>t</i> = <i>h</i> / (<i>c</i>√(1−<i>β</i>²)) = γ<i>t</i><sub>0</sub>,　γ = 1/√(1−<i>β</i>²)</span>
+      </div>
+      <p class="foot">動く時計の「地上から見た進み」を、数値で求めた光の到着時刻と照らして確かめています。ミューオンの寿命は 2.197 マイクロ秒としました。</p>
+    </div>
+  
+    <div class="more" data-more="rt">
+      <h3>もう少し詳しく</h3>
+      <p>特殊相対論の出発点は、「光の速さは、誰から見ても同じ」という原理です。光時計では、この原理だけから時間の遅れが導かれます。動く時計の光は、地上から見ると斜めに進んで、道のりが長くなります。光の速さは変わらないので、1往復の時間が長くなります。ピタゴラスの定理で、t = γh/c が得られます。</p>
+      <p>時間が遅れるのは、光時計に限りません。生物の時計や、原子の振動を含め、どんな時計も同じ割合で遅れます。もし時計の種類で違えば、動いていることを、時計の中だけで検出できてしまうからです。</p>
+      <p>この効果は、現実に測られています。ミューオンは、静止していると平均2.2マイクロ秒で壊れ、光の速さで走っても約660メートルしか進めません。しかし、上空で生まれたミューオンの多くは地上まで届きます。γ が大きく、地上から見た寿命が延びているからです。GPS 衛星の時計も、速さのために1日あたり約7マイクロ秒遅れます(重力による進みも加わって、実際には全体で約38マイクロ秒進みます)。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>β を 0.6 にします。γ はちょうど 1.25 です。地上の時計が5目盛り進むと、動く時計は4目盛りになります。</li>
+        <li>β を 0.99 にします。γ ≈ 7.1 で、ミューオンの見かけの寿命が、約15.6マイクロ秒になります。</li>
+        <li>右の絵で、光の道のりが長くなる様子を見ます。速くなるほど、斜めの線が緩やかになります。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>動く時計の側から見ると、どうなりますか。</dt>
+        <dd>動く時計の上の人は、自分は止まっていると考えます。その人から見ると、遅れているのは地上の時計のほうです。時間の遅れは、お互いさまです。</dd>
+        <dt>光時計でしか成り立たないのですか。</dt>
+        <dd>どんな時計でも成り立ちます。相対性原理により、慣性系はどれも同等なので、時計の仕組みによる違いは出ません。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 2. 時空図 -->
+  <section class="panel" id="panel-rm" role="tabpanel" aria-labelledby="tab-rm" hidden>
+    <div class="intro">
+      <h2>動く人の座標軸は、時空図の上で傾く</h2>
+      <p>横軸に位置 <i>x</i>、縦軸に時間 <i>ct</i> をとった図です。速さ <i>β</i> で動く人にとっての座標軸(紫)は、光の線(45°)に向かって、両側から傾きます。点 P を動かして、座標の値の変わり方を見てください。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <figcaption>
+            <span><i class="dot accent"></i>事象 P(動かせます)</span>
+            <span><i class="dot violet"></i>動く人の軸 <i>x</i>′, <i>ct</i>′</span>
+            <span><i class="dot warm"></i>棒(動く人から見て長さ 1)</span>
+          </figcaption>
+          <div class="cv"><canvas id="cv-rm" class="touchable" data-aspect="1" role="img" aria-label="ミンコフスキー図。地上の座標軸と、動く人の傾いた座標軸、光の線。"></canvas></div>
+        </figure>
+      </div>
+      <div class="ctrl">
+        <div class="field">
+          <label for="rm-b"><span>動く人の速さ <i>β</i></span><output id="rm-b-v"></output></label>
+          <input type="range" id="rm-b" min="0" max="0.95" step="0.01" value="0.6">
+        </div>
+        <div class="field">
+          <span class="lab"><span>点 P の位置</span></span>
+          <div class="btns" id="rm-pre">
+            <button class="chip" data-v="0" aria-pressed="true">時間的(光より遅い)</button>
+            <button class="chip" data-v="1" aria-pressed="false">空間的(光より速い)</button>
+            <button class="chip" data-v="2" aria-pressed="false">光の線の上</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="check"><input type="checkbox" id="rm-rod" checked>動く棒を表示(長さの収縮)</label>
+          <label class="check" style="margin-top:6px"><input type="checkbox" id="rm-grid" checked>動く人の格子を表示</label>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">ローレンツ因子 γ</span><span class="v" id="rm-g"></span></div>
+          <div class="meter"><span class="k">P(地上)( <i>x</i>, <i>ct</i> )</span><span class="v" id="rm-p0"></span></div>
+          <div class="meter"><span class="k">P(動く人)( <i>x</i>′, <i>ct</i>′ )</span><span class="v" id="rm-p1"></span></div>
+          <div class="meter"><span class="k">間隔 (<i>ct</i>)² − <i>x</i>²</span><span class="v" id="rm-s"></span></div>
+          <div class="meter"><span class="k">地上で測った棒の長さ</span><span class="v" id="rm-len"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>P を図のどこに置いても、光の線(45°)は、動く人の軸にとっても 45° のままです。これが光速不変の表れです。</li>
+        <li>動く人の <i>x</i>′ 軸と平行な直線は、動く人にとっての「同じ時刻」です。傾いているので、地上で同時の2つの出来事は、動く人にとっては同時ではありません(同時刻の相対性)。</li>
+        <li>間隔 (<i>ct</i>)² − <i>x</i>² は、β を変えても動きません。時間的(正)なら、順序が全員にとって同じで、原因と結果になり得ます。空間的(負)なら、順序が人によって入れ替わりますが、そのため、互いに影響は与えられません。</li>
+        <li>棒の両端の世界線(橙)が、地上の「同じ時刻」(<i>ct</i> = 0 の線)と交わる間隔が、地上で測った長さです。1/γ に縮んでいます。</li>
+      </ul>
+      <div class="eq" aria-label="ローレンツ変換の式">
+        <span class="ln"><i>x</i>′ = γ(<i>x</i> − <i>β ct</i>),　<i>ct</i>′ = γ(<i>ct</i> − <i>βx</i>)</span>
+        <span class="ln"><i>x</i>′ 軸: <i>ct</i> = <i>βx</i>　/　<i>ct</i>′ 軸: <i>x</i> = <i>β ct</i></span>
+      </div>
+    </div>
+  
+    <div class="more" data-more="rm">
+      <h3>もう少し詳しく</h3>
+      <p>時空図では、1つの出来事が1つの点になり、物体の動きは「世界線」という線になります。光の世界線は、どの人にとっても 45° の線です。この線で区切られた円錐(光円錐)の内側は、原因と結果が結べる範囲で、外側は、どんな信号も届かない範囲です。</p>
+      <p>速さ β で動く人の座標軸は、光の線を挟んで、対称に傾きます。その人にとっての「同じ時刻」は、傾いた x′ 軸に平行な線です。地上で同時の2つの出来事が、動く人にとっては同時でなくなるのは、このためです。長さの収縮も、同じ図から読み取れます。</p>
+      <p>どの座標でも変わらないのは、間隔 (ct)² − x² です。正なら時間的で、出来事の順序は全員にとって同じです。負なら空間的で、順序は人によって入れ替わります。ただし、互いに影響を及ぼせない関係なので、因果の矛盾は起きません。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>β を 0 から 0.95 まで動かします。2本の紫の軸が、光の線に近づいていきます。</li>
+        <li>P を「空間的」にして、β を大きくします。ct′ の値が、負に変わる瞬間があります。順序が入れ替わった、ということです。</li>
+        <li>P を「光の線の上」にします。β をどう変えても、間隔は 0 のままで、x′ = ct′ になります。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>光より速く動けるのですか。</dt>
+        <dd>空間的な間隔の2点は、光より速い動きでないと結べません。そのような動きや信号は、特殊相対論では許されません。</dd>
+        <dt>なぜ軸は両側から傾くのですか。</dt>
+        <dd>光の線が、どの座標でも 45° のままでなければならないからです。そのため、x′ 軸と ct′ 軸は、光の線について対称になります。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 3. 相対論的な加速 -->
+  <section class="panel" id="panel-rp" role="tabpanel" aria-labelledby="tab-rp" hidden>
+    <div class="intro">
+      <h2>力を加え続けても、光の速さには届かない</h2>
+      <p>一定の力で粒子を押し続けます。ニュートン力学では、速さは時間に比例して、いつか光の速さを超えます。相対論では、運動量は増え続けても、速さは光の速さに近づくだけです。</p>
+    </div>
+    <div class="figs pair">
+      <figure class="fig">
+        <figcaption>
+          <span><i class="dot accent"></i>相対論</span>
+          <span><i class="dot warm"></i>ニュートン力学</span>
+          <span><i class="dot violet"></i>光</span>
+        </figcaption>
+        <div class="cv"><canvas id="cv-rp" data-aspect="0.62" role="img" aria-label="速さと時間のグラフ。相対論の速さは光の速さで頭打ちになる。"></canvas></div>
+      </figure>
+      <figure class="fig">
+        <figcaption>位置のようす(同じ力で押した3つ)</figcaption>
+        <div class="cv"><canvas id="cv-rpt" data-aspect="0.62" role="img" aria-label="相対論の粒子、ニュートン力学の粒子、光の位置。"></canvas></div>
+      </figure>
+    </div>
+    <div class="ctrl cols">
+      <div class="field">
+        <label for="rp-t"><span>経過時間 <i>t</i>(<i>mc</i>/<i>F</i> を 1 とする)</span><output id="rp-t-v"></output></label>
+        <input type="range" id="rp-t" min="0" max="5" step="0.02" value="0">
+      </div>
+      <div class="field">
+        <span class="lab"><span>再生速度</span></span>
+        <div class="btns" id="rp-speed">
+          <button class="chip" data-v="0.5" aria-pressed="false">×0.5</button>
+          <button class="chip" data-v="1" aria-pressed="true">×1</button>
+          <button class="chip" data-v="2" aria-pressed="false">×2</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="btns">
+          <button class="btn primary" id="rp-pause">一時停止</button>
+          <button class="btn" id="rp-reset">最初から</button>
+        </div>
+      </div>
+      <div class="meters">
+        <div class="meter"><span class="k">相対論の速さ <i>v</i>/<i>c</i></span><span class="v" id="rp-v"></span></div>
+        <div class="meter"><span class="k">ニュートン力学の速さ</span><span class="v" id="rp-nv"></span></div>
+        <div class="meter"><span class="k">ローレンツ因子 γ</span><span class="v" id="rp-g"></span></div>
+        <div class="meter"><span class="k">運動量 <i>p</i> (<i>mc</i>)</span><span class="v" id="rp-p"></span></div>
+        <div class="meter"><span class="k">運動エネルギー (γ−1)<i>mc</i>²</span><span class="v" id="rp-ke"></span></div>
+        <div class="meter"><span class="k">ニュートン力学の ½<i>mv</i>²</span><span class="v" id="rp-nk"></span></div>
+      </div>
+    </div>
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>低い速さのうちは、2本の線は重なっています。ニュートン力学は、遅い世界でよく合う近似です。</li>
+        <li>ニュートン力学の速さ(橙)は、<i>t</i> = 1 で光の速さに達し、その先で超えてしまいます。相対論(青)は、いくら押しても光の速さの手前に留まります。</li>
+        <li>押し続けた力は、運動量とエネルギーを増やし続けます。速さが増えない代わりに、エネルギーは γ に比例して増えます。力のする仕事 <i>Fx</i> は、運動エネルギー (γ−1)<i>mc</i>² に等しくなります。</li>
+        <li>下の絵では、ニュートン力学の粒子(橙)は、やがて光(紫)を追い越します。相対論の粒子(青)は、光に追いつけません。</li>
+      </ul>
+      <div class="eq" aria-label="相対論的な加速の式">
+        <span class="ln"><i>p</i> = <i>Ft</i>,　<i>v</i>/<i>c</i> = <i>p</i> / √(<i>m</i>²<i>c</i>² + <i>p</i>²),　<i>E</i>² = (<i>pc</i>)² + (<i>mc</i>²)²</span>
+        <span class="ln"><i>x</i> = (<i>mc</i>²/<i>F</i>)(√(1 + (<i>Ft</i>/<i>mc</i>)²) − 1)</span>
+      </div>
+      <p class="foot"><i>m</i> = <i>c</i> = 1 の単位です。解析式は、運動方程式を数値で積分した結果と照らして確かめています。</p>
+    </div>
+  
+    <div class="more" data-more="rp">
+      <h3>もう少し詳しく</h3>
+      <p>力 F が運動量の変化率 dp/dt を決めるのは、相対論でも変わりません。違うのは、運動量が p = γmv になることです。速さが光の速さに近づくと、γ が急に大きくなるので、わずかな速さの増加にも大きな運動量が必要になります。そのため、力を加え続けても、速さは光の速さの手前で頭打ちになります。</p>
+      <p>全エネルギーは E = γmc²、静止エネルギーは mc² です。運動エネルギーは (γ−1)mc² で、速さが小さいときは ½mv² に一致します。力のする仕事 Fx は、この運動エネルギーに等しくなります。</p>
+      <p>加速器は、この性質を使っています。電子(静止エネルギー約0.511メガ電子ボルト)を、1メガボルトで加速すると、γ ≈ 3 になり、速さは光の約94%です。ここで速さの増加はわずかでも、エネルギーは何倍にも増えます。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>時間を 0.1 付近に動かします。相対論とニュートン力学の速さは、ほぼ同じです。</li>
+        <li>時間を 1 まで動かします。ニュートン力学の速さは 1(光速)に達しますが、相対論では約 0.71 です。</li>
+        <li>時間を 5 まで動かします。γ とエネルギーの増え方を見ます。速さは、ほとんど増えません。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>質量が増えるのですか。</dt>
+        <dd>現在は、質量は粒子に固有で不変とする考え方が標準です。速さが上がるにつれて増えるのは、運動量とエネルギーです。</dd>
+        <dt>光の速さで動く粒子はありますか。</dt>
+        <dd>質量のない粒子(光子など)だけが、光の速さで動けます。質量のある粒子は、光の速さに近づけますが、届きません。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
+  <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const PI = Math.PI;
+  const TAU = 2 * Math.PI;
+  const MONO = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  const SANS = '12.5px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif';
+  const RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const C = {};
+  const COLOR_KEYS = ['ink', 'ink-2', 'ink-3', 'line', 'grid', 'accent', 'warm', 'green', 'violet', 'stage', 'surface'];
+  let colorSig = '';
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    let sig = '';
+    for (const k of COLOR_KEYS) { C[k] = cs.getPropertyValue('--' + k).trim(); sig += C[k]; }
+    const changed = sig !== colorSig;
+    colorSig = sig;
+    return changed;
+  }
+  function rgb(hex) {
+    const h = hex.replace('#', '');
+    const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    return [parseInt(f.slice(0, 2), 16), parseInt(f.slice(2, 4), 16), parseInt(f.slice(4, 6), 16)];
+  }
+  function fit(cv) {
+    const w = Math.max(200, cv.parentElement.clientWidth);
+    const h = Math.round(w * parseFloat(cv.dataset.aspect));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.height = h + 'px';
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+  function setText(id, s) { const el = $(id); if (el && el.textContent !== s) el.textContent = s; }
+  function bindRange(id, fmtFn, onChange) {
+    const el = $(id), out = $(id + '-v');
+    const upd = () => { out.innerHTML = fmtFn(+el.value); };
+    el.addEventListener('input', () => { upd(); onChange(+el.value); });
+    upd();
+  }
+  function bindChips(groupId, onPick) {
+    const chips = $(groupId).querySelectorAll('.chip');
+    chips.forEach((ch) => {
+      ch.addEventListener('click', () => {
+        chips.forEach((o) => o.setAttribute('aria-pressed', o === ch ? 'true' : 'false'));
+        onPick(parseFloat(ch.dataset.v));
+      });
+    });
+  }
+  function setChip(groupId, v) {
+    $(groupId).querySelectorAll('.chip').forEach((o) => o.setAttribute('aria-pressed', parseFloat(o.dataset.v) === v ? 'true' : 'false'));
+  }
+  function setRange(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event('input')); }
+  function arrow(ctx, x0, y0, x1, y1, col, lw) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 2) return;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const ux = dx / L, uy = dy / L, hl = Math.min(10, L * 0.55), hw = hl * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * hl - uy * hw, y1 - uy * hl + ux * hw);
+    ctx.lineTo(x1 - ux * hl + uy * hw, y1 - uy * hl - ux * hw);
+    ctx.closePath(); ctx.fill();
+  }
+  function setPauseLabel(btnId, paused) { $(btnId).textContent = paused ? '再開' : '一時停止'; }
+  function fmt(x, d) { return (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d); }
+  function niceStep(raw) {
+    const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+  }
+  // 横軸の目盛り(値 v0〜v1 を px0〜px1 に対応させ、y に線を引く)
+  function drawAxisX(ctx, px0, px1, v0, v1, y, step, decimals) {
+    ctx.strokeStyle = C.line; ctx.fillStyle = C['ink-3']; ctx.lineWidth = 1; ctx.font = MONO;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.beginPath(); ctx.moveTo(px0, y); ctx.lineTo(px1, y); ctx.stroke();
+    for (let v = Math.ceil(v0 / step - 1e-9) * step; v <= v1 + 1e-9; v += step) {
+      const x = px0 + (v - v0) / (v1 - v0) * (px1 - px0);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 4); ctx.stroke();
+      ctx.fillText((Math.abs(v) < 1e-9 ? 0 : v).toFixed(decimals), x, y + 6);
+    }
+  }
+
+  // タブ切り替えと描画ループ。modules[name] = { frame(dt), resize(), invalidate() }
+  function startApp(TABS, modules) {
+    let active = TABS[0];
+    function show(name, focus) {
+      active = name;
+      TABS.forEach((nm) => {
+        const sel = nm === name, tb = $('tab-' + nm);
+        tb.setAttribute('aria-selected', sel ? 'true' : 'false');
+        tb.tabIndex = sel ? 0 : -1;
+        $('panel-' + nm).hidden = !sel;
+        if (sel && focus) tb.focus();
+      });
+      modules[name].resize();
+      modules[name].invalidate();
+    }
+    function go(name, focus, fromHash) {
+      show(name, focus);
+      if (!fromHash) { try { history.replaceState(null, '', '#' + name); } catch (e) { location.hash = name; } }
+    }
+    window.addEventListener('hashchange', () => { const n = location.hash.slice(1); if (TABS.indexOf(n) >= 0 && n !== active) go(n, false, true); });
+    TABS.forEach((nm, i) => {
+      const tb = $('tab-' + nm);
+      tb.addEventListener('click', () => go(nm));
+      tb.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); go(TABS[(i + 1) % TABS.length], true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); go(TABS[(i + TABS.length - 1) % TABS.length], true); }
+      });
+    });
+    const wrapEl = document.querySelector('.wrap');
+    let lastW = 0;
+    function onResize() {
+      const w = wrapEl.clientWidth;
+      if (w === lastW) return;
+      lastW = w;
+      modules[active].resize();
+      modules[active].invalidate();
+    }
+    if (window.ResizeObserver) new ResizeObserver(onResize).observe(wrapEl);
+    window.addEventListener('resize', onResize);
+    let last = 0;
+    function frame(ts) {
+      if (!last) last = ts;
+      const dt = Math.min(0.05, (ts - last) / 1000);
+      last = ts;
+      if (readColors()) modules[active].invalidate();
+      modules[active].frame(dt);
+      requestAnimationFrame(frame);
+    }
+    readColors();
+    lastW = wrapEl.clientWidth;
+    const n0 = location.hash.slice(1);
+    if (TABS.indexOf(n0) > 0) show(n0); else modules[active].resize();
+    requestAnimationFrame(frame);
+  }
+
+  /* PHYSICS-BEGIN */
+  // ---- 特殊相対論(c = 1)----
+  function gam(b) { return 1 / Math.sqrt(1 - b * b); }
+  // S の事象 (x, t) を、S に対して速さ b で +x へ動く S′ の座標 (x′, t′) に直す
+  function boost(x, t, b) { const g = gam(b); return [g * (x - b * t), g * (t - b * x)]; }
+  function unboost(xp, tp, b) { const g = gam(b); return [g * (xp + b * tp), g * (tp + b * xp)]; }
+  function interval2(x, t) { return t * t - x * x; }
+  function addVel(u, v) { return (u + v) / (1 + u * v); }
+  // 光時計: 鏡の間隔 h。速さ b で横に動く時計の中で、光が下の鏡から上の鏡へ着くまでの地上での時間(数値で求める)
+  function clockUpTime(h, b) {
+    let lo = 0, hi = 100 * h;
+    for (let i = 0; i < 200; i++) { const m = 0.5 * (lo + hi); if (m - Math.hypot(b * m, h) < 0) lo = m; else hi = m; }
+    return 0.5 * (lo + hi);
+  }
+  // 棒(S′ で長さ L0)の、S で同時刻に測った長さ。両端の世界線 x′ = 0, L0 の、S での同時刻の位置から求める
+  function rodLengthInS(L0, b, tS) {
+    const pos = (xp) => xp / gam(b) + b * tS;     // x′ = γ(x − b t) を x について解く
+    return pos(L0) - pos(0);
+  }
+  // 一定の力 F(m = 1)で加速する粒子。p = F t
+  function relMom(F, t) { return F * t; }
+  function relV(F, t) { const p = F * t; return p / Math.sqrt(1 + p * p); }
+  function relX(F, t) { const p = F * t; return (Math.sqrt(1 + p * p) - 1) / F; }
+  function relGamma(F, t) { const p = F * t; return Math.sqrt(1 + p * p); }
+  function newtV(F, t) { return F * t; }
+  function newtX(F, t) { return 0.5 * F * t * t; }
+  /* PHYSICS-END */
+
+  const MU_LIFE = 2.197;   // ミューオンの平均寿命(マイクロ秒)
+
+  /* ---------- 1. 光時計 ---------- */
+  const RT = (function () {
+    const cvA = $('cv-rt'), cvB = $('cv-rtl'), HH = 2.2;   // 鏡の間隔(c = 1 の単位)
+    let ca, sa = { w: 0, h: 0 }, cb, sb = { w: 0, h: 0 };
+    let b = 0.8, t = 0, speed = 1, paused = RM;
+    const tri = (tau) => { const u = ((tau % (2 * HH)) + 2 * HH) % (2 * HH) / HH; return HH * (u < 1 ? u : 2 - u); };
+    function reset() { t = 0; }
+    function clock(ctx, cx, y0, S, tau, label, col, n) {
+      const hw = 38;
+      ctx.strokeStyle = C['ink-2']; ctx.lineWidth = 3; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx - hw, y0); ctx.lineTo(cx + hw, y0); ctx.moveTo(cx - hw, y0 - HH * S); ctx.lineTo(cx + hw, y0 - HH * S); ctx.stroke();
+      ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.setLineDash([3, 4]); ctx.beginPath(); ctx.moveTo(cx, y0); ctx.lineTo(cx, y0 - HH * S); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = col; ctx.strokeStyle = C.surface; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(cx, y0 - tri(tau) * S, 7, 0, TAU); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = C.ink; ctx.font = SANS; ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillText(label, cx, y0 + 12);
+      ctx.fillStyle = col; ctx.font = '600 15px "IBM Plex Mono", ui-monospace, monospace'; ctx.fillText(n + ' 目盛り', cx, y0 + 32);
+    }
+    function drawA() {
+      const W = sa.w, H = sa.h, S = (H - 90) / HH, y0 = H - 62, g = gam(b);
+      ca.clearRect(0, 0, W, H); ca.fillStyle = C.stage; ca.fillRect(0, 0, W, H);
+      clock(ca, W * 0.27, y0, S, t, '地上の時計', C.accent, Math.floor(t / (2 * HH)));
+      clock(ca, W * 0.73, y0, S, t / g, '動く時計', C.warm, Math.floor(t / g / (2 * HH)));
+    }
+    function drawB() {
+      const W = sb.w, H = sb.h, VW = 16, S = W / VW, y0 = H * 0.78, xc = W * 0.3, g = gam(b), xcl = b * t;
+      cb.clearRect(0, 0, W, H); cb.fillStyle = C.stage; cb.fillRect(0, 0, W, H);
+      // 地面の目盛り
+      cb.strokeStyle = C.line; cb.lineWidth = 1; cb.fillStyle = C['ink-3']; cb.font = MONO; cb.textAlign = 'center'; cb.textBaseline = 'top';
+      const xl = xcl - xc / S, xr = xcl + (W - xc) / S;
+      cb.beginPath(); cb.moveTo(0, y0 + 14); cb.lineTo(W, y0 + 14); cb.stroke();
+      for (let k = Math.ceil(xl / 2) * 2; k <= xr; k += 2) { const x = xc + (k - xcl) * S; cb.beginPath(); cb.moveTo(x, y0 + 14); cb.lineTo(x, y0 + 19); cb.stroke(); cb.fillText(String(k), x, y0 + 21); }
+      cb.textAlign = 'right'; cb.fillText('地上の位置', W - 6, y0 + 36);
+      // 光の道のり
+      const Tt = Math.min(4 * HH * g, 60), n = 240; cb.strokeStyle = C.accent; cb.lineWidth = 2; cb.lineJoin = 'round'; cb.beginPath();
+      let first = true;
+      for (let i = 0; i <= n; i++) { const tt = t - Tt * (1 - i / n); if (tt < 0) continue; const x = xc + (b * tt - xcl) * S, y = y0 - tri(tt / g) * S; if (first) { cb.moveTo(x, y); first = false; } else cb.lineTo(x, y); }
+      cb.stroke();
+      // 時計
+      const hw = 0.9 * S;
+      cb.strokeStyle = C['ink-2']; cb.lineWidth = 3; cb.lineCap = 'round'; cb.beginPath(); cb.moveTo(xc - hw, y0); cb.lineTo(xc + hw, y0); cb.moveTo(xc - hw, y0 - HH * S); cb.lineTo(xc + hw, y0 - HH * S); cb.stroke();
+      cb.fillStyle = C.warm; cb.strokeStyle = C.surface; cb.lineWidth = 2; cb.beginPath(); cb.arc(xc, y0 - tri(t / g) * S, 6.5, 0, TAU); cb.fill(); cb.stroke();
+      if (b > 0.01) arrow(cb, xc + hw + 6, y0 - HH * S / 2, xc + hw + 6 + 14 + 30 * b, y0 - HH * S / 2, C.warm, 2.2);
+      // 往復の長さの比較
+      cb.fillStyle = C['ink-2']; cb.font = SANS; cb.textAlign = 'left'; cb.textBaseline = 'top';
+      cb.fillText('光の1往復: 静止なら ' + (2 * HH).toFixed(1) + '、地上から見ると ' + (2 * HH * g).toFixed(1) + '(γ 倍)', 10, 8);
+    }
+    function readouts() {
+      const g = gam(b);
+      setText('rt-g', g.toFixed(3)); setText('rt-n0', String(Math.floor(t / (2 * HH)))); setText('rt-n1', String(Math.floor(t / g / (2 * HH))));
+      setText('rt-mu', (MU_LIFE * g).toFixed(2) + ' μs');
+    }
+    function resize() { const A = fit(cvA), B = fit(cvB); ca = A.ctx; sa = A; cb = B.ctx; sb = B; }
+    function frame(dt) { if (!paused) t += dt * speed * 1.2; drawA(); drawB(); readouts(); }
+    bindRange('rt-b', (v) => v.toFixed(2), (v) => { b = v; setChip('rt-pre', v); reset(); });
+    bindChips('rt-pre', (v) => { setRange('rt-b', v); });
+    bindChips('rt-speed', (v) => { speed = v; });
+    $('rt-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('rt-pause', paused); });
+    $('rt-reset').addEventListener('click', reset);
+    setPauseLabel('rt-pause', paused);
+    return { frame: frame, resize: resize, invalidate: () => {} };
+  })();
+
+  /* ---------- 2. 時空図 ---------- */
+  const RMd = (function () {
+    const cv = $('cv-rm'), R = 5, PRE = [[1.2, 3], [3, 1.2], [2.2, 2.2]];
+    let cx, sz = { w: 0, h: 0 }, b = 0.6, P = PRE[0].slice(), showRod = true, showGrid = true, drag = false;
+    function map() { const W = sz.w, H = sz.h, S = Math.min(W, H) / (2 * R); return { S: S, X: (x) => W / 2 + x * S, Y: (y) => H / 2 - y * S, W: W, H: H }; }
+    function line(m, x0, y0, x1, y1) { cx.beginPath(); cx.moveTo(m.X(x0), m.Y(y0)); cx.lineTo(m.X(x1), m.Y(y1)); cx.stroke(); }
+    function draw() {
+      const m = map(), g = gam(b), W = m.W, H = m.H;
+      cx.clearRect(0, 0, W, H); cx.fillStyle = C.stage; cx.fillRect(0, 0, W, H);
+      cx.save(); cx.beginPath(); cx.rect(0, 0, W, H); cx.clip();
+      // 地上の格子
+      cx.strokeStyle = C.grid; cx.lineWidth = 1;
+      for (let k = -R; k <= R; k++) { line(m, k, -R, k, R); line(m, -R, k, R, k); }
+      // 動く人の格子(x′ = k: x = k/γ + β ct、ct′ = k: ct = k/γ + β x)
+      if (showGrid) {
+        cx.strokeStyle = C.violet; cx.globalAlpha = 0.28; cx.lineWidth = 1;
+        for (let k = -8; k <= 8; k++) { line(m, k / g - b * R * 2, -R * 2, k / g + b * R * 2, R * 2); line(m, -R * 2, k / g - b * R * 2, R * 2, k / g + b * R * 2); }
+        cx.globalAlpha = 1;
+      }
+      // 棒
+      if (showRod) {
+        const x1 = 1 / g;
+        cx.fillStyle = C.warm; cx.globalAlpha = 0.16; cx.beginPath(); cx.moveTo(m.X(-b * R), m.Y(-R)); cx.lineTo(m.X(b * R), m.Y(R)); cx.lineTo(m.X(x1 + b * R), m.Y(R)); cx.lineTo(m.X(x1 - b * R), m.Y(-R)); cx.closePath(); cx.fill(); cx.globalAlpha = 1;
+        cx.strokeStyle = C.warm; cx.lineWidth = 1.8; line(m, -b * R, -R, b * R, R); line(m, x1 - b * R, -R, x1 + b * R, R);
+        cx.lineWidth = 5; cx.lineCap = 'butt'; line(m, 0, 0, x1, 0);
+        cx.strokeStyle = C.violet; cx.lineWidth = 3; line(m, 0, 0, g, g * b);
+      }
+      // 光の線
+      cx.strokeStyle = C['ink-3']; cx.lineWidth = 1.2; cx.setLineDash([6, 5]); line(m, -R, -R, R, R); line(m, -R, R, R, -R); cx.setLineDash([]);
+      // 地上の軸
+      cx.strokeStyle = C.ink; cx.lineWidth = 1.8; line(m, -R, 0, R, 0); line(m, 0, -R, 0, R);
+      // 動く人の軸
+      cx.strokeStyle = C.violet; cx.lineWidth = 2.4; line(m, -R, -b * R, R, b * R); line(m, -b * R, -R, b * R, R);
+      cx.fillStyle = C.ink; cx.font = MONO; cx.textAlign = 'right'; cx.textBaseline = 'top';
+      cx.fillText('x', W - 6, m.Y(0) + 5); cx.textAlign = 'left'; cx.fillText('ct', m.X(0) + 6, 4);
+      cx.fillStyle = C.violet; cx.textAlign = 'right'; cx.fillText("x′", W - 6, m.Y(b * R) - 16); cx.textAlign = 'left'; cx.fillText('ct′', m.X(b * R) + 6, 20);
+      // 事象 P
+      const q = boost(P[0], P[1], b), pu = unboost(q[0], 0, b), pv = unboost(0, q[1], b);
+      cx.setLineDash([3, 4]); cx.lineWidth = 1.3; cx.strokeStyle = C['ink-2'];
+      line(m, P[0], P[1], P[0], 0); line(m, P[0], P[1], 0, P[1]);
+      cx.strokeStyle = C.violet; line(m, P[0], P[1], pu[0], pu[1]); line(m, P[0], P[1], pv[0], pv[1]);
+      cx.setLineDash([]);
+      cx.fillStyle = C.accent; cx.strokeStyle = C.surface; cx.lineWidth = 2.5; cx.beginPath(); cx.arc(m.X(P[0]), m.Y(P[1]), 8, 0, TAU); cx.fill(); cx.stroke();
+      cx.fillStyle = C.accent; cx.font = SANS; cx.textAlign = 'left'; cx.textBaseline = 'bottom'; cx.fillText('P', m.X(P[0]) + 11, m.Y(P[1]) - 5);
+      cx.restore();
+    }
+    function readouts() {
+      const g = gam(b), q = boost(P[0], P[1], b), s = interval2(P[0], P[1]);
+      setText('rm-g', g.toFixed(3)); setText('rm-p0', '(' + P[0].toFixed(2) + ', ' + P[1].toFixed(2) + ')'); setText('rm-p1', '(' + q[0].toFixed(2) + ', ' + q[1].toFixed(2) + ')');
+      setText('rm-s', (Math.abs(s) < 0.005 ? 0 : s).toFixed(2)); setText('rm-len', (1 / g).toFixed(3));
+    }
+    function pick(e) {
+      const rc = cv.getBoundingClientRect(), m = map(), px = e.clientX - rc.left, py = e.clientY - rc.top;
+      P = [Math.max(-R + 0.2, Math.min(R - 0.2, (px - m.W / 2) / m.S)), Math.max(-R + 0.2, Math.min(R - 0.2, (m.H / 2 - py) / m.S))];
+      $('rm-pre').querySelectorAll('.chip').forEach((o) => o.setAttribute('aria-pressed', 'false'));
+    }
+    cv.addEventListener('pointerdown', (e) => { drag = true; cv.setPointerCapture(e.pointerId); pick(e); });
+    cv.addEventListener('pointermove', (e) => { if (drag) pick(e); });
+    cv.addEventListener('pointerup', () => { drag = false; });
+    cv.addEventListener('pointercancel', () => { drag = false; });
+    bindRange('rm-b', (v) => v.toFixed(2), (v) => { b = v; });
+    bindChips('rm-pre', (v) => { P = PRE[v].slice(); });
+    $('rm-rod').addEventListener('change', (e) => { showRod = e.target.checked; });
+    $('rm-grid').addEventListener('change', (e) => { showGrid = e.target.checked; });
+    function resize() { const A = fit(cv); cx = A.ctx; sz = A; }
+    function frame() { draw(); readouts(); }
+    return { frame: frame, resize: resize, invalidate: () => {} };
+  })();
+
+  /* ---------- 3. 相対論的な加速 ---------- */
+  const RP = (function () {
+    const cvG = $('cv-rp'), cvT = $('cv-rpt'), TM = 5, F = 1;
+    let cg, sg = { w: 0, h: 0 }, ct, st = { w: 0, h: 0 };
+    let t = 0, speed = 1, paused = RM, hold = 0;
+    function reset() { t = 0; hold = 0; }
+    function drawG() {
+      const W = sg.w, H = sg.h, l = 34, r = W - 12, top = 12, bot = H - 32, VM = 1.6, X = (tt) => l + tt / TM * (r - l), Y = (v) => bot - v / VM * (bot - top);
+      cg.clearRect(0, 0, W, H); cg.fillStyle = C.stage; cg.fillRect(0, 0, W, H);
+      drawAxisX(cg, l, r, 0, TM, bot, 1, 0);
+      cg.strokeStyle = C.line; cg.lineWidth = 1; cg.beginPath(); cg.moveTo(l, top); cg.lineTo(l, bot); cg.stroke();
+      cg.fillStyle = C['ink-3']; cg.font = MONO; cg.textAlign = 'right'; cg.textBaseline = 'middle';
+      for (let v = 0; v <= VM + 1e-9; v += 0.5) { cg.fillText(v.toFixed(1), l - 5, Y(v)); cg.strokeStyle = C.grid; cg.beginPath(); cg.moveTo(l, Y(v)); cg.lineTo(r, Y(v)); cg.stroke(); }
+      cg.textAlign = 'right'; cg.textBaseline = 'top'; cg.fillText('時間 t', r, bot + 20); cg.textAlign = 'left'; cg.fillText('v / c', l + 4, top - 2);
+      cg.strokeStyle = C.violet; cg.lineWidth = 1.6; cg.setLineDash([6, 4]); cg.beginPath(); cg.moveTo(l, Y(1)); cg.lineTo(r, Y(1)); cg.stroke(); cg.setLineDash([]);
+      cg.strokeStyle = C.warm; cg.lineWidth = 2; cg.setLineDash([6, 4]); cg.beginPath(); cg.moveTo(X(0), Y(0)); cg.lineTo(X(VM / F), Y(VM)); cg.stroke(); cg.setLineDash([]);
+      cg.strokeStyle = C.accent; cg.lineWidth = 2.4; cg.beginPath();
+      for (let i = 0; i <= 200; i++) { const tt = TM * i / 200, x = X(tt), y = Y(relV(F, tt)); if (i) cg.lineTo(x, y); else cg.moveTo(x, y); }
+      cg.stroke();
+      cg.strokeStyle = C['ink-2']; cg.lineWidth = 1; cg.beginPath(); cg.moveTo(X(t), top); cg.lineTo(X(t), bot); cg.stroke();
+      cg.fillStyle = C.accent; cg.strokeStyle = C.surface; cg.lineWidth = 2; cg.beginPath(); cg.arc(X(t), Y(relV(F, t)), 5.5, 0, TAU); cg.fill(); cg.stroke();
+      const nv = Math.min(newtV(F, t), VM); cg.fillStyle = C.warm; cg.beginPath(); cg.arc(X(t), Y(nv), 5.5, 0, TAU); cg.fill(); cg.stroke();
+      cg.fillStyle = C.violet; cg.font = MONO; cg.textAlign = 'right'; cg.textBaseline = 'bottom'; cg.fillText('光の速さ', r - 2, Y(1) - 3);
+    }
+    function drawT() {
+      const W = st.w, H = st.h, l = 14, r = W - 14, XM = 13, X = (x) => l + x / XM * (r - l), rows = [[0.2, C.violet, '光', t], [0.5, C.accent, '相対論', relX(F, t)], [0.8, C.warm, 'ニュートン力学', newtX(F, t)]];
+      ct.clearRect(0, 0, W, H); ct.fillStyle = C.stage; ct.fillRect(0, 0, W, H);
+      drawAxisX(ct, l, r, 0, XM, H - 24, 2, 0);
+      ct.font = SANS; ct.textBaseline = 'bottom';
+      for (const [fy, col, nm, x] of rows) {
+        const y = fy * (H - 34) + 4;
+        ct.strokeStyle = C.line; ct.lineWidth = 1; ct.beginPath(); ct.moveTo(l, y); ct.lineTo(r, y); ct.stroke();
+        ct.strokeStyle = col; ct.lineWidth = 2.5; ct.beginPath(); ct.moveTo(X(0), y); ct.lineTo(X(Math.min(x, XM)), y); ct.stroke();
+        ct.fillStyle = col; ct.textAlign = 'left'; ct.fillText(nm, l + 2, y - 8);
+        if (x <= XM) { ct.strokeStyle = C.surface; ct.lineWidth = 2; ct.beginPath(); ct.arc(X(x), y, 7, 0, TAU); ct.fill(); ct.stroke(); }
+      }
+      ct.fillStyle = C['ink-3']; ct.font = MONO; ct.textAlign = 'right'; ct.textBaseline = 'top'; ct.fillText('位置 (mc²/F)', r, 2);
+    }
+    function readouts() {
+      const g = relGamma(F, t), v = relV(F, t);
+      setText('rp-v', v.toFixed(3)); setText('rp-nv', newtV(F, t).toFixed(3)); setText('rp-g', g.toFixed(3)); setText('rp-p', relMom(F, t).toFixed(3));
+      setText('rp-ke', (g - 1).toFixed(3)); setText('rp-nk', (0.5 * newtV(F, t) * newtV(F, t)).toFixed(3));
+      const s = $('rp-t'); if (document.activeElement !== s) s.value = t; $('rp-t-v').textContent = t.toFixed(2);
+    }
+    function resize() { const A = fit(cvG), B = fit(cvT); cg = A.ctx; sg = A; ct = B.ctx; st = B; }
+    function frame(dt) {
+      if (!paused) { if (hold > 0) { hold -= dt; if (hold <= 0) reset(); } else { t += dt * speed * 0.5; if (t >= TM) { t = TM; hold = 1.5; } } }
+      drawG(); drawT(); readouts();
+    }
+    $('rp-t').addEventListener('input', (e) => { t = +e.target.value; paused = true; hold = 0; setPauseLabel('rp-pause', true); });
+    bindChips('rp-speed', (v) => { speed = v; });
+    $('rp-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('rp-pause', paused); });
+    $('rp-reset').addEventListener('click', reset);
+    setPauseLabel('rp-pause', paused);
+    return { frame: frame, resize: resize, invalidate: () => {} };
+  })();
+
+  startApp(['rt', 'rm', 'rp'], { rt: RT, rm: RMd, rp: RP });
+})();
+</script>
+</body></html>

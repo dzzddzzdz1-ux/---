@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>波動・光学ラボ | SimPhys</title>
+<meta name="description" content="二重スリットの干渉と回折、波束の群速度と位相速度、ドップラー効果とマッハ円錐を動かして確かめる、学部の波動・光学のシミュレーション。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* 基本リセット(単体ページ用) */
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: 実験ノートのような1カラム。上に分野タブ、下に「画面 → 操作 → 読み取り方」の順。広い画面では画面と操作を横に並べる。
+   Color: 青みのある灰色の紙面に、青(A・速度)、橙(B・コリオリ力)、緑(遠心力)、紫(目印)を測定色として使う。
+   Type: 本文は Zen Kaku Gothic New、数値は IBM Plex Mono。 */
+:root {
+  --bg: #EEF2F7;
+  --surface: #FFFFFF;
+  --stage: #F6F8FB;
+  --ink: #142033;
+  --ink-2: #4B5D75;
+  --ink-3: #7A8BA1;
+  --line: #D3DBE6;
+  --grid: #E4EAF2;
+  --accent: #2457D6;
+  --accent-ink: #FFFFFF;
+  --warm: #D9620F;
+  --green: #148A66;
+  --violet: #7B45C9;
+  --focus: #2457D6;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1622;
+    --surface: #16212F;
+    --stage: #111B28;
+    --ink: #E7EEF7;
+    --ink-2: #A3B4C8;
+    --ink-3: #74879E;
+    --line: #2A3A4E;
+    --grid: #1F2D3F;
+    --accent: #6F9CFF;
+    --accent-ink: #0E1622;
+    --warm: #FF9B52;
+    --green: #4DD0A3;
+    --violet: #B994FF;
+    --focus: #8DB2FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1622;
+  --surface: #16212F;
+  --stage: #111B28;
+  --ink: #E7EEF7;
+  --ink-2: #A3B4C8;
+  --ink-3: #74879E;
+  --line: #2A3A4E;
+  --grid: #1F2D3F;
+  --accent: #6F9CFF;
+  --accent-ink: #0E1622;
+  --warm: #FF9B52;
+  --green: #4DD0A3;
+  --violet: #B994FF;
+  --focus: #8DB2FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, p, ul, figure { margin: 0; }
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.head { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--ink-2); }
+h1 { font-size: 30px; line-height: 1.3; font-weight: 700; letter-spacing: 0.02em; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 40em; }
+
+.tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+}
+.tab {
+  font: inherit; font-weight: 500; line-height: 1.3; color: var(--ink-2); background: transparent;
+  border: 0; border-radius: 7px; padding: 10px 4px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, input:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px;
+}
+
+.panel { display: flex; flex-direction: column; gap: 18px; }
+.intro { display: flex; flex-direction: column; gap: 6px; }
+h2 { font-size: 20px; line-height: 1.45; font-weight: 700; text-wrap: balance; }
+.intro p { color: var(--ink-2); max-width: 42em; }
+
+.stage-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 820px) {
+  .stage-grid { grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr); }
+}
+.figs { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.figs.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.fig { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fig figcaption {
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+  display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: center;
+}
+.cv { border: 1px solid var(--line); border-radius: 10px; background: var(--stage); overflow: hidden; }
+.cv canvas { display: block; width: 100%; }
+.cv canvas.touchable { touch-action: none; cursor: crosshair; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+.dot.accent { background: var(--accent); }
+.dot.warm { background: var(--warm); }
+.dot.green { background: var(--green); }
+.dot.violet { background: var(--violet); }
+
+.ctrl {
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+}
+.ctrl.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px 22px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .lab { font-size: 13px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.field output { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+input[type="range"] { width: 100%; height: 28px; margin: 0; accent-color: var(--accent); }
+input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.check, .field label.check { display: flex; justify-content: flex-start; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn, .chip {
+  font: inherit; font-size: 13px; line-height: 1.2; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.meter { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; background: var(--stage); border-radius: 8px; min-width: 0; }
+.meter .k { font-size: 11.5px; line-height: 1.4; color: var(--ink-3); }
+.meter .v { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.read { display: flex; flex-direction: column; gap: 12px; max-width: 46em; }
+.read h3 { font-size: 15px; font-weight: 700; }
+.read ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+.read li::marker { color: var(--ink-3); }
+.eq {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 13.5px; line-height: 2;
+}
+.eq .ln { display: block; white-space: nowrap; }
+.eq i { font-style: italic; }
+.foot { font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+.eyebrow a { color: var(--accent); text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
+.sitenav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding-top: 4px; border-top: 1px solid var(--line); }
+.sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
+.sitenav a:hover { color: var(--accent); text-decoration: underline; }
+.sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.more { display: flex; flex-direction: column; gap: 10px; max-width: 46em; border-top: 1px solid var(--line); padding-top: 16px; }
+.more h3 { font-size: 15px; font-weight: 700; margin-top: 6px; }
+.more p { color: var(--ink-2); font-size: 14.5px; line-height: 1.85; }
+.more ol { margin: 0; padding-left: 1.4em; display: flex; flex-direction: column; gap: 6px; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa { margin: 0; display: flex; flex-direction: column; gap: 12px; }
+.more dl.qa dt { font-weight: 700; font-size: 14.5px; }
+.more dl.qa dt::before { content: 'Q. '; color: var(--accent); font-family: var(--font-mono); }
+.more dl.qa dd { margin: 2px 0 0; color: var(--ink-2); font-size: 14.5px; line-height: 1.8; }
+.more dl.qa dd::before { content: 'A. '; color: var(--warm); font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 波動・光学 · 試作</p>
+    <h1>波動・光学ラボ</h1>
+    <p class="lede">波の重ね合わせは、式で書けば足し算ですが、絵にすると見え方が変わります。二重スリットの干渉、波束の速さが2つあること、ドップラー効果と衝撃波の3つを動かして確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
+    <button class="tab" role="tab" id="tab-wd" aria-controls="panel-wd" aria-selected="true" tabindex="0">二重スリット</button>
+    <button class="tab" role="tab" id="tab-wg" aria-controls="panel-wg" aria-selected="false" tabindex="-1">群速度</button>
+    <button class="tab" role="tab" id="tab-wp" aria-controls="panel-wp" aria-selected="false" tabindex="-1">ドップラー</button>
+  </div>
+
+  <!-- 1. 二重スリット -->
+  <section class="panel" id="panel-wd" role="tabpanel" aria-labelledby="tab-wd">
+    <div class="intro">
+      <h2>2つの隙間を通った波が、明暗の縞をつくる</h2>
+      <p>波長 λ の波が、壁の2つのスリットを通り抜けます。スリットの幅と間隔を変えて、干渉の縞が、どの方向にできるかを見てください。</p>
+    </div>
+    <div class="figs pair">
+      <figure class="fig">
+        <figcaption>
+          <span><i class="dot accent"></i>山</span>
+          <span><i class="dot warm"></i>谷</span>
+          <span>左の壁にスリットがあります(横軸 0〜32λ)</span>
+        </figcaption>
+        <div class="cv"><canvas id="cv-wd" data-aspect="0.78" role="img" aria-label="2つのスリットから右へ広がる波の様子。"></canvas></div>
+      </figure>
+      <figure class="fig">
+        <figcaption>
+          <span><i class="dot accent"></i>遠方の強さ</span>
+          <span><i class="dot warm"></i>1つのスリットだけの強さ(回折の包絡線)</span>
+        </figcaption>
+        <div class="cv"><canvas id="cv-wdi" data-aspect="0.78" role="img" aria-label="方向ごとの強さのグラフ。"></canvas></div>
+      </figure>
+    </div>
+    <div class="ctrl cols">
+      <div class="field">
+        <label for="wd-d"><span>スリットの間隔 <i>d</i> / λ</span><output id="wd-d-v"></output></label>
+        <input type="range" id="wd-d" min="1.5" max="10" step="0.1" value="4">
+      </div>
+      <div class="field">
+        <label for="wd-a"><span>スリットの幅 <i>a</i> / λ</span><output id="wd-a-v"></output></label>
+        <input type="range" id="wd-a" min="0.2" max="3" step="0.1" value="0.8">
+      </div>
+      <div class="field">
+        <label class="check"><input type="checkbox" id="wd-ray" checked>明線の方向を点線で表示</label>
+        <div class="btns" style="margin-top:8px">
+          <button class="btn primary" id="wd-pause">一時停止</button>
+          <button class="btn" id="wd-reset">最初から</button>
+        </div>
+      </div>
+      <div class="meters">
+        <div class="meter"><span class="k">1 次の明線の角度</span><span class="v" id="wd-th"></span></div>
+        <div class="meter"><span class="k">見える明線の数</span><span class="v" id="wd-n"></span></div>
+        <div class="meter"><span class="k">回折の最初の暗線</span><span class="v" id="wd-env"></span></div>
+        <div class="meter"><span class="k">消える次数</span><span class="v" id="wd-miss"></span></div>
+      </div>
+    </div>
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>明線(強め合う方向)は、2つのスリットからの道のりの差が、波長のちょうど整数倍になる方向です。式にすると <i>d</i> sin<i>θ</i> = <i>mλ</i> です。<i>d</i> を大きくすると縞が細かく、増えます。</li>
+        <li>スリットの幅 <i>a</i> が有限だと、1つのスリットの中の各点からの波も干渉します(回折)。その強さが、縞全体の「包絡線」になります。<i>a</i> を小さくすると、包絡線が広がり、広い範囲に縞ができます。</li>
+        <li>d/a が整数のとき、その倍数の次数の明線が、包絡線の暗線と重なって、消えます。</li>
+      </ul>
+      <div class="eq" aria-label="二重スリットの式">
+        <span class="ln"><i>I</i>(<i>θ</i>) = <i>I</i><sub>0</sub> cos²(π<i>d</i> sin<i>θ</i>/<i>λ</i>) · [sin(π<i>a</i> sin<i>θ</i>/<i>λ</i>) / (π<i>a</i> sin<i>θ</i>/<i>λ</i>)]²</span>
+      </div>
+      <p class="foot">各スリットを8個の点波源で表し、足し合わせて描いています。右のグラフは、遠方(フラウンホーファー回折)の式です。</p>
+    </div>
+  
+    <div class="more" data-more="wd">
+      <h3>もう少し詳しく</h3>
+      <p>2つのスリットを通った波は、それぞれが新しい波源になって広がります(ホイヘンスの原理)。ある方向では、2つのスリットからの道のりの差が、波長のちょうど整数倍になり、山と山が重なって強め合います。半波長の奇数倍になる方向では、山と谷が重なって打ち消し合います。これがヤングの実験の縞です。</p>
+      <p>現実のスリットには幅があります。幅の中の各点からの波も干渉するので、1つのスリットだけでも、波は広がって強さが方向によって変わります(回折)。二重スリットの強さは、「2つの波源の干渉」と「1つのスリットの回折」の積です。幅 a が波長より小さいと、回折の広がりは全方向に及びます。</p>
+      <p>この縞は、光に限りません。電子や中性子のような粒子でも、同じ縞ができます。電子を1個ずつ送っても、たくさん積み重ねると、縞が現れます。1個の電子が、両方のスリットを通る波として振る舞っていることを示す実験です。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>d を 1.5 から 10 まで動かします。縞の数が増え、間隔が細かくなります。</li>
+        <li>a を 0.2 から 2 へ動かします。右のグラフの点線(包絡線)が狭まり、縞が現れる範囲も狭くなります。</li>
+        <li>d = 6、a = 1.5 にします。d/a = 4 なので、4 次の明線が消えます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>縞の間隔は等間隔ですか。</dt>
+        <dd>角度が小さいときは、ほぼ等間隔です。厳密には、sin θ が等間隔(sin θ = mλ/d)で、角度そのものは、外側ほど広がります。</dd>
+        <dt>スリットが1つだけだとどうなりますか。</dt>
+        <dd>右のグラフの点線のような、なだらかな山になります。縞は、2つのスリットがあって初めて生まれます。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 2. 群速度と位相速度 -->
+  <section class="panel" id="panel-wg" role="tabpanel" aria-labelledby="tab-wg" hidden>
+    <div class="intro">
+      <h2>波の山の速さと、波のかたまりの速さは違う</h2>
+      <p>波長のわずかに違う波を重ねると、かたまり(波束)ができます。かたまりが進む速さ(群速度)と、中の山が進む速さ(位相速度)を、見比べてください。</p>
+    </div>
+    <div class="figs pair">
+      <figure class="fig">
+        <figcaption>
+          <span><i class="dot accent"></i>波(実部)</span>
+          <span><i class="dot warm"></i>包絡線</span>
+          <span><i class="dot violet"></i>山を追う点(位相速度)</span>
+        </figcaption>
+        <div class="cv"><canvas id="cv-wg" data-aspect="0.62" role="img" aria-label="波束と、山を追う点。"></canvas></div>
+      </figure>
+      <figure class="fig">
+        <figcaption>角振動数 ω と波数 k の関係(分散関係)</figcaption>
+        <div class="cv"><canvas id="cv-wgd" data-aspect="0.62" role="img" aria-label="分散関係のグラフ。接線の傾きが群速度。"></canvas></div>
+      </figure>
+    </div>
+    <div class="ctrl cols">
+      <div class="field">
+        <span class="lab"><span>波の種類(分散関係)</span></span>
+        <div class="btns" id="wg-type">
+          <button class="chip" data-v="0" aria-pressed="true">ω = k</button>
+          <button class="chip" data-v="1" aria-pressed="false">ω = √k</button>
+          <button class="chip" data-v="2" aria-pressed="false">ω = k²/2</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="wg-k"><span>中心の波数 <i>k</i><sub>0</sub></span><output id="wg-k-v"></output></label>
+        <input type="range" id="wg-k" min="1" max="4" step="0.1" value="2">
+      </div>
+      <div class="field">
+        <label for="wg-s"><span>波数のばらつき σ<sub>k</sub>(大きいほど細いかたまり)</span><output id="wg-s-v"></output></label>
+        <input type="range" id="wg-s" min="0.15" max="0.5" step="0.01" value="0.25">
+      </div>
+      <div class="field">
+        <div class="btns">
+          <button class="btn primary" id="wg-pause">一時停止</button>
+          <button class="btn" id="wg-reset">最初から</button>
+        </div>
+      </div>
+      <div class="meters">
+        <div class="meter"><span class="k">位相速度 ω/k</span><span class="v" id="wg-vp"></span></div>
+        <div class="meter"><span class="k">群速度 dω/dk</span><span class="v" id="wg-vg"></span></div>
+        <div class="meter"><span class="k">かたまりの実測速度</span><span class="v" id="wg-vm"></span></div>
+        <div class="meter"><span class="k">経過時間</span><span class="v" id="wg-t"></span></div>
+      </div>
+    </div>
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>「ω = k」(光や、空気中の音のように分散がない場合)では、2つの速さが一致し、かたまりの形も崩れません。</li>
+        <li>「ω = √k」(深い水の波)では、群速度は位相速度の半分です。紫の点は、かたまりの中を前へ抜けていきます。</li>
+        <li>「ω = k²/2」(自由な量子力学の粒子の波)では、群速度は位相速度の2倍です。山は、かたまりの中を後ろへ下がっていきます。粒子の速さに対応するのは、群速度です。</li>
+        <li>分散があると、かたまりは進むにつれて広がります。波長ごとに速さが違うためです。</li>
+      </ul>
+      <div class="eq" aria-label="群速度と位相速度の式">
+        <span class="ln"><i>v</i><sub>p</sub> = <i>ω</i>/<i>k</i>,　<i>v</i><sub>g</sub> = d<i>ω</i>/d<i>k</i></span>
+        <span class="ln"><i>ψ</i>(<i>x</i>, <i>t</i>) = Σ<sub>k</sub> <i>w</i>(<i>k</i>) e<sup>i(<i>kx</i> − <i>ω</i>(<i>k</i>)<i>t</i>)</sup>,　<i>w</i>(<i>k</i>) ∝ exp[−(<i>k</i>−<i>k</i><sub>0</sub>)²/2σ<sub>k</sub>²]</span>
+      </div>
+    </div>
+  
+    <div class="more" data-more="wg">
+      <h3>もう少し詳しく</h3>
+      <p>ばらばらの波長の波を重ねると、特定の場所だけで強め合って、かたまり(波束)になります。かたまりの中の1つの山が進む速さが位相速度 ω/k、かたまり全体が進む速さが群速度 dω/dk です。この2つは、角振動数 ω と波数 k の関係(分散関係)で決まり、グラフの「原点との傾き」と「接線の傾き」に対応します。</p>
+      <p>エネルギーや情報が運ばれる速さは、ふつう群速度です。量子力学の自由粒子では、ω = ħk²/2m なので、群速度は ħk/m = p/m で、粒子の速度そのものです。位相速度はその半分になります。</p>
+      <p>位相速度は、光の速さを超えることがあります。たとえば、プラズマの中を進む電磁波がそうです。ただ、そのときも、エネルギーを運ぶ群速度は光の速さを超えないので、相対論には反しません。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「ω = √k」を選びます。紫の点が、かたまりの中を前へ抜けていきます。</li>
+        <li>「ω = k²/2」を選びます。今度は、点が後ろへ下がっていきます。</li>
+        <li>σ<sub>k</sub> を小さくします。かたまりが太くなり、広がる速さがゆっくりになります。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>分散のない波では、なぜ形が崩れないのですか。</dt>
+        <dd>波長によらず、すべての成分が同じ速さで進むからです。真空中の光が、代表的な例です。</dd>
+        <dt>かたまりが広がるのはなぜですか。</dt>
+        <dd>分散があると、波長ごとに速さが違います。速い成分は前へ、遅い成分は後ろへ分かれていくので、全体が広がります。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 3. ドップラー効果 -->
+  <section class="panel" id="panel-wp" role="tabpanel" aria-labelledby="tab-wp" hidden>
+    <div class="intro">
+      <h2>動く音源の前では波が詰まり、後ろでは伸びる</h2>
+      <p>一定の間隔で波を出しながら右へ動く音源を、上から見ます。音源の速さを上げて、前後で波の間隔がどう変わるか、音速を超えるとどうなるかを見てください。</p>
+    </div>
+    <div class="figs pair">
+      <figure class="fig">
+        <figcaption>
+          <span><i class="dot warm"></i>音源</span>
+          <span><i class="dot accent"></i>波面</span>
+          <span><i class="dot violet"></i>観測者(前方 A と後方 B)</span>
+        </figcaption>
+        <div class="cv"><canvas id="cv-wp" data-aspect="0.6" role="img" aria-label="右へ動く音源から広がる波面。"></canvas></div>
+      </figure>
+      <figure class="fig">
+        <figcaption>聞こえる振動数の比(音源が出す振動数 = 1)</figcaption>
+        <div class="cv"><canvas id="cv-wpf" data-aspect="0.6" role="img" aria-label="音源の速さと聞こえる振動数の関係。"></canvas></div>
+      </figure>
+    </div>
+    <div class="ctrl cols">
+      <div class="field">
+        <label for="wp-m"><span>音源の速さ(音速 = 1)</span><output id="wp-m-v"></output></label>
+        <input type="range" id="wp-m" min="0" max="1.6" step="0.05" value="0.5">
+      </div>
+      <div class="field">
+        <span class="lab"><span>再生速度</span></span>
+        <div class="btns" id="wp-speed">
+          <button class="chip" data-v="1" aria-pressed="false">×1</button>
+          <button class="chip" data-v="2" aria-pressed="true">×2</button>
+          <button class="chip" data-v="4" aria-pressed="false">×4</button>
+        </div>
+      </div>
+      <div class="field">
+        <div class="btns">
+          <button class="btn primary" id="wp-pause">一時停止</button>
+          <button class="btn" id="wp-reset">最初から</button>
+        </div>
+      </div>
+      <div class="meters">
+        <div class="meter"><span class="k">A(前方)の理論値</span><span class="v" id="wp-ft"></span></div>
+        <div class="meter"><span class="k">A(前方)の実測</span><span class="v" id="wp-fm"></span></div>
+        <div class="meter"><span class="k">B(後方)の理論値</span><span class="v" id="wp-bt"></span></div>
+        <div class="meter"><span class="k">B(後方)の実測</span><span class="v" id="wp-bm"></span></div>
+        <div class="meter"><span class="k">マッハ角</span><span class="v" id="wp-ma"></span></div>
+      </div>
+    </div>
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>音源が速いほど、前方では波面が詰まり、後方では間隔が広がります。観測者が受け取る振動数は、前が <i>f</i>/(1−<i>M</i>)、後ろが <i>f</i>/(1+<i>M</i>) です。右のグラフの2本の線と、画面の「実測」(観測者に波面が届く間隔から測った値)が、一致します。</li>
+        <li><i>M</i> が 1 に近づくと、前方の波面が重なり、振動数が急に大きくなります。<i>M</i> = 1 では、波面が音源の前に積み重なります。</li>
+        <li><i>M</i> &gt; 1 では、音源が自分の出した波より先へ進みます。波面の包絡線は円錐(2次元では2本の線)になり、これがマッハ円錐、またその面が衝撃波です。角度は sin<i>α</i> = 1/<i>M</i> です。</li>
+      </ul>
+      <div class="eq" aria-label="ドップラー効果の式">
+        <span class="ln"><i>f</i>′ = <i>f</i> / (1 ∓ <i>M</i>)　(音源が近づく側 −、遠ざかる側 +、静止した観測者)</span>
+        <span class="ln">sin<i>α</i> = <i>c</i>/<i>v</i> = 1/<i>M</i>　(<i>M</i> &gt; 1)</span>
+      </div>
+      <p class="foot">音源と観測者が、同じ直線の上にあるときの結果です。観測者が動く場合や、光のドップラー効果は、ここでは扱いません。</p>
+    </div>
+  
+    <div class="more" data-more="wp">
+      <h3>もう少し詳しく</h3>
+      <p>音を出す波源が動くと、進行方向の前では波面が詰まって、振動数が高くなります。後ろでは波面が伸びて、低くなります。波源が音速の M 倍で近づく静止した観測者には f/(1−M)、遠ざかる観測者には f/(1+M) で聞こえます。通り過ぎる救急車のサイレンが、急に低く聞こえるのは、このためです。</p>
+      <p>音は空気という媒質の中を伝わるので、波源が動く場合と、観測者が動く場合で、式が違います。観測者が動くときは f′ = f(c ± v)/c です。一方、媒質のない光では、波源と観測者の相対的な動きだけで決まります(相対論的ドップラー効果)。遠い銀河の光が赤くずれるのは、遠ざかっているためです。</p>
+      <p>波源が音速を超えると、波面が波源に追いつけず、包絡線が円錐(2次元では2本の線)になります。これがマッハ円錐で、半頂角は sin α = 1/M です。円錐の面に沿って圧力が急に変わるのが衝撃波で、超音速で飛ぶ飛行機が出す「ソニックブーム」の正体です。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>M = 0.8 にします。A では約 5 倍、B では約 0.56 倍の振動数になります。</li>
+        <li>M を 0.9、0.95 と増やして、A の振動数が急に大きくなることを、右のグラフで見ます。</li>
+        <li>M = 1.5 にします。マッハ角は約 41.8° です。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>M = 1 ちょうどでは、どうなりますか。</dt>
+        <dd>前方の波面がすべて音源の位置に重なって、積み重なります。理論上は、前方の振動数が無限大になります。</dd>
+        <dt>なぜ音の高さは、通り過ぎる瞬間に急に変わるのですか。</dt>
+        <dd>正面から近づく間は f/(1−M)、遠ざかる間は f/(1+M) で、一定です。通り過ぎるときに、ほぼ瞬間的に切り替わります。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
+  <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const PI = Math.PI;
+  const TAU = 2 * Math.PI;
+  const MONO = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  const SANS = '12.5px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif';
+  const RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const C = {};
+  const COLOR_KEYS = ['ink', 'ink-2', 'ink-3', 'line', 'grid', 'accent', 'warm', 'green', 'violet', 'stage', 'surface'];
+  let colorSig = '';
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    let sig = '';
+    for (const k of COLOR_KEYS) { C[k] = cs.getPropertyValue('--' + k).trim(); sig += C[k]; }
+    const changed = sig !== colorSig;
+    colorSig = sig;
+    return changed;
+  }
+  function rgb(hex) {
+    const h = hex.replace('#', '');
+    const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    return [parseInt(f.slice(0, 2), 16), parseInt(f.slice(2, 4), 16), parseInt(f.slice(4, 6), 16)];
+  }
+  function fit(cv) {
+    const w = Math.max(200, cv.parentElement.clientWidth);
+    const h = Math.round(w * parseFloat(cv.dataset.aspect));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.height = h + 'px';
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+  function setText(id, s) { const el = $(id); if (el && el.textContent !== s) el.textContent = s; }
+  function bindRange(id, fmtFn, onChange) {
+    const el = $(id), out = $(id + '-v');
+    const upd = () => { out.innerHTML = fmtFn(+el.value); };
+    el.addEventListener('input', () => { upd(); onChange(+el.value); });
+    upd();
+  }
+  function bindChips(groupId, onPick) {
+    const chips = $(groupId).querySelectorAll('.chip');
+    chips.forEach((ch) => {
+      ch.addEventListener('click', () => {
+        chips.forEach((o) => o.setAttribute('aria-pressed', o === ch ? 'true' : 'false'));
+        onPick(parseFloat(ch.dataset.v));
+      });
+    });
+  }
+  function setChip(groupId, v) {
+    $(groupId).querySelectorAll('.chip').forEach((o) => o.setAttribute('aria-pressed', parseFloat(o.dataset.v) === v ? 'true' : 'false'));
+  }
+  function setRange(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event('input')); }
+  function arrow(ctx, x0, y0, x1, y1, col, lw) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 2) return;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const ux = dx / L, uy = dy / L, hl = Math.min(10, L * 0.55), hw = hl * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * hl - uy * hw, y1 - uy * hl + ux * hw);
+    ctx.lineTo(x1 - ux * hl + uy * hw, y1 - uy * hl - ux * hw);
+    ctx.closePath(); ctx.fill();
+  }
+  function setPauseLabel(btnId, paused) { $(btnId).textContent = paused ? '再開' : '一時停止'; }
+  function fmt(x, d) { return (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d); }
+  function niceStep(raw) {
+    const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+  }
+  // 横軸の目盛り(値 v0〜v1 を px0〜px1 に対応させ、y に線を引く)
+  function drawAxisX(ctx, px0, px1, v0, v1, y, step, decimals) {
+    ctx.strokeStyle = C.line; ctx.fillStyle = C['ink-3']; ctx.lineWidth = 1; ctx.font = MONO;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.beginPath(); ctx.moveTo(px0, y); ctx.lineTo(px1, y); ctx.stroke();
+    for (let v = Math.ceil(v0 / step - 1e-9) * step; v <= v1 + 1e-9; v += step) {
+      const x = px0 + (v - v0) / (v1 - v0) * (px1 - px0);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 4); ctx.stroke();
+      ctx.fillText((Math.abs(v) < 1e-9 ? 0 : v).toFixed(decimals), x, y + 6);
+    }
+  }
+
+  // タブ切り替えと描画ループ。modules[name] = { frame(dt), resize(), invalidate() }
+  function startApp(TABS, modules) {
+    let active = TABS[0];
+    function show(name, focus) {
+      active = name;
+      TABS.forEach((nm) => {
+        const sel = nm === name, tb = $('tab-' + nm);
+        tb.setAttribute('aria-selected', sel ? 'true' : 'false');
+        tb.tabIndex = sel ? 0 : -1;
+        $('panel-' + nm).hidden = !sel;
+        if (sel && focus) tb.focus();
+      });
+      modules[name].resize();
+      modules[name].invalidate();
+    }
+    function go(name, focus, fromHash) {
+      show(name, focus);
+      if (!fromHash) { try { history.replaceState(null, '', '#' + name); } catch (e) { location.hash = name; } }
+    }
+    window.addEventListener('hashchange', () => { const n = location.hash.slice(1); if (TABS.indexOf(n) >= 0 && n !== active) go(n, false, true); });
+    TABS.forEach((nm, i) => {
+      const tb = $('tab-' + nm);
+      tb.addEventListener('click', () => go(nm));
+      tb.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); go(TABS[(i + 1) % TABS.length], true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); go(TABS[(i + TABS.length - 1) % TABS.length], true); }
+      });
+    });
+    const wrapEl = document.querySelector('.wrap');
+    let lastW = 0;
+    function onResize() {
+      const w = wrapEl.clientWidth;
+      if (w === lastW) return;
+      lastW = w;
+      modules[active].resize();
+      modules[active].invalidate();
+    }
+    if (window.ResizeObserver) new ResizeObserver(onResize).observe(wrapEl);
+    window.addEventListener('resize', onResize);
+    let last = 0;
+    function frame(ts) {
+      if (!last) last = ts;
+      const dt = Math.min(0.05, (ts - last) / 1000);
+      last = ts;
+      if (readColors()) modules[active].invalidate();
+      modules[active].frame(dt);
+      requestAnimationFrame(frame);
+    }
+    readColors();
+    lastW = wrapEl.clientWidth;
+    const n0 = location.hash.slice(1);
+    if (TABS.indexOf(n0) > 0) show(n0); else modules[active].resize();
+    requestAnimationFrame(frame);
+  }
+
+  /* PHYSICS-BEGIN */
+  // ---- 二重スリット(波長 λ = 1 の単位)----
+  // 各スリットを、幅 a の中に等間隔に並べた n 個の点波源で表す(ホイヘンスの原理)。スリット中心は y = ±d/2。
+  function slitSources(d, a, n) {
+    const ys = [];
+    for (const c of [-d / 2, d / 2]) for (let i = 0; i < n; i++) ys.push(c + a * ((i + 0.5) / n - 0.5));
+    return ys;
+  }
+  // 点 (x, y) での複素振幅 Σ exp(i k r)/√r(k = 2π)。スリットは x = 0 の線上。
+  function slitField(x, y, ys) {
+    let re = 0, im = 0; const k = 2 * Math.PI;
+    for (let j = 0; j < ys.length; j++) {
+      const dy = y - ys[j], r = Math.sqrt(x * x + dy * dy) + 1e-9, ph = k * r, w = 1 / Math.sqrt(r);
+      re += w * Math.cos(ph); im += w * Math.sin(ph);
+    }
+    return [re, im];
+  }
+  // 遠方での強度(θ = 0 で 1 に規格化)。解析式 cos²(πd sinθ/λ)・sinc²(πa sinθ/λ)
+  function sinc(x) { return Math.abs(x) < 1e-9 ? 1 : Math.sin(x) / x; }
+  function farI(theta, d, a) {
+    const s = Math.sin(theta), al = Math.PI * d * s, be = Math.PI * a * s;
+    const c = Math.cos(al), q = sinc(be);
+    return c * c * q * q;
+  }
+  // 点波源を足し合わせた遠方強度(数値)
+  function farIsum(theta, d, a, n) {
+    const ys = slitSources(d, a, n), k = 2 * Math.PI, s = Math.sin(theta);
+    let re = 0, im = 0;
+    for (const y of ys) { re += Math.cos(-k * y * s); im += Math.sin(-k * y * s); }
+    return (re * re + im * im) / (ys.length * ys.length);
+  }
+  // 主極大の角度(m 次)。sinθ = m/d。存在しなければ NaN
+  function orderAngle(m, d) { const s = m / d; return Math.abs(s) <= 1 ? Math.asin(s) : NaN; }
+  // ---- 分散のある波の波束(k0 まわりのガウス型の重ね合わせ)----
+  // type 0: ω = k(分散なし)、1: ω = √k(深い水の波に相当)、2: ω = k²/2(自由粒子)
+  function dispW(type, k) { return type === 0 ? k : type === 1 ? Math.sqrt(k) : 0.5 * k * k; }
+  function dispVp(type, k) { return dispW(type, k) / k; }
+  function dispVg(type, k) { return type === 0 ? 1 : type === 1 ? 0.5 / Math.sqrt(k) : k; }
+  function packetAt(type, k0, sk, x, t) {
+    const n = 81; let re = 0, im = 0, ws = 0;
+    for (let j = 0; j < n; j++) {
+      const k = k0 + sk * (-4 + 8 * j / (n - 1)), w = Math.exp(-0.5 * Math.pow((k - k0) / sk, 2)), ph = k * x - dispW(type, k) * t;
+      re += w * Math.cos(ph); im += w * Math.sin(ph); ws += w;
+    }
+    return [re / ws, im / ws];
+  }
+  // ---- ドップラー効果(音速 c = 1、波源の速さ M = v/c)。波源は x 軸上を +x 向きに動く ----
+  function dopSrcX(te, M, x0) { return x0 + M * te; }
+  function dopArrival(te, M, x0, ox, oy) { const sx = dopSrcX(te, M, x0); return te + Math.hypot(ox - sx, oy); }
+  function dopFreqRatio(M, ahead) { return ahead ? 1 / (1 - M) : 1 / (1 + M); }
+  function machAngle(M) { return M > 1 ? Math.asin(1 / M) : NaN; }
+  /* PHYSICS-END */
+
+  /* ---------- 1. 二重スリット ---------- */
+  const WD = (function () {
+    const cvM = $('cv-wd'), cvI = $('cv-wdi');
+    const GW = 128, GH = 96, XM = 32, YM = 12, NSRC = 8, OMEGA = PI;
+    let cm, sm = { w: 0, h: 0 }, ci, si = { w: 0, h: 0 };
+    let d = 4, a = 0.8, t = 0, paused = RM, rays = true, norm = 1, dirty = true;
+    const re = new Float32Array(GW * GH), im = new Float32Array(GW * GH), sc = new Float32Array(GW);
+    const off = document.createElement('canvas'); off.width = GW; off.height = GH;
+    const octx = off.getContext('2d'), img = octx.createImageData(GW, GH);
+
+    function compute() {
+      const ys = slitSources(d, a, NSRC), mags = [];
+      for (let i = 0; i < GW; i++) sc[i] = Math.sqrt((i + 0.5) / GW * XM + 3);
+      for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
+        const x = (i + 0.5) / GW * XM, y = YM - (j + 0.5) / GH * 2 * YM, f = slitField(x, y, ys);
+        re[j * GW + i] = f[0]; im[j * GW + i] = f[1];
+        if (i > 3) mags.push(Math.hypot(f[0], f[1]) * sc[i]);
+      }
+      mags.sort((p, q) => p - q);
+      norm = Math.max(1e-6, mags[Math.floor(mags.length * 0.97)]);
+      dirty = false;
+    }
+    function drawMap() {
+      const W = sm.w, H = sm.h, mw = W - 18, mh = mw * YM * 2 / XM, mx0 = 14, my0 = (H - mh) / 2;
+      cm.clearRect(0, 0, W, H); cm.fillStyle = C.stage; cm.fillRect(0, 0, W, H);
+      if (dirty) compute();
+      const cs = rgb(C.stage), ca = rgb(C.accent), cw = rgb(C.warm), cph = Math.cos(OMEGA * t), sph = Math.sin(OMEGA * t), data = img.data;
+      for (let j = 0; j < GH; j++) for (let i = 0; i < GW; i++) {
+        const k = j * GW + i, v = Math.max(-1, Math.min(1, (re[k] * cph + im[k] * sph) * sc[i] / norm * 0.9)), av = Math.abs(v), tg = v >= 0 ? ca : cw, p = k * 4;
+        data[p] = cs[0] + (tg[0] - cs[0]) * av; data[p + 1] = cs[1] + (tg[1] - cs[1]) * av; data[p + 2] = cs[2] + (tg[2] - cs[2]) * av; data[p + 3] = 255;
+      }
+      octx.putImageData(img, 0, 0);
+      cm.imageSmoothingEnabled = true; cm.drawImage(off, mx0, my0, mw, mh);
+      const S = mw / XM, yc = my0 + mh / 2;
+      // 壁とスリット
+      cm.strokeStyle = C['ink-2']; cm.lineWidth = 4; cm.lineCap = 'butt';
+      const gaps = [-d / 2, d / 2].map((c) => [yc - (c + a / 2) * S, yc - (c - a / 2) * S]).sort((p, q) => p[0] - q[0]);
+      let yy = my0 - 2;
+      cm.beginPath();
+      for (const g of gaps) { cm.moveTo(mx0 - 2, yy); cm.lineTo(mx0 - 2, g[0]); yy = g[1]; }
+      cm.moveTo(mx0 - 2, yy); cm.lineTo(mx0 - 2, my0 + mh + 2); cm.stroke();
+      if (rays) {
+        cm.save(); cm.beginPath(); cm.rect(mx0, my0, mw, mh); cm.clip();
+        cm.strokeStyle = C.violet; cm.lineWidth = 1.2; cm.setLineDash([5, 4]);
+        for (let m = 0; m <= 12; m++) { const th = orderAngle(m, d); if (isNaN(th)) break; for (const sg of (m ? [1, -1] : [1])) { cm.beginPath(); cm.moveTo(mx0, yc); cm.lineTo(mx0 + Math.cos(th) * mw * 2, yc - sg * Math.sin(th) * mw * 2); cm.stroke(); } }
+        cm.setLineDash([]); cm.restore();
+      }
+    }
+    function drawI() {
+      const W = si.w, H = si.h, l = 12, r = W - 12, top = 14, bot = H - 40, X = (deg) => l + (deg + 90) / 180 * (r - l), Y = (v) => bot - v * (bot - top);
+      ci.clearRect(0, 0, W, H); ci.fillStyle = C.stage; ci.fillRect(0, 0, W, H);
+      drawAxisX(ci, l, r, -90, 90, bot, 30, 0);
+      ci.fillStyle = C['ink-3']; ci.font = MONO; ci.textAlign = 'right'; ci.textBaseline = 'top'; ci.fillText('角度 θ (度)', r, bot + 22);
+      ci.strokeStyle = C.line; ci.lineWidth = 1; ci.beginPath(); ci.moveTo(l, top); ci.lineTo(l, bot); ci.stroke();
+      const N = 360;
+      ci.beginPath(); ci.moveTo(X(-90), bot);
+      for (let i = 0; i <= N; i++) { const deg = -90 + 180 * i / N; ci.lineTo(X(deg), Y(farI(deg * PI / 180, d, a))); }
+      ci.lineTo(X(90), bot); ci.closePath(); ci.fillStyle = C.accent; ci.globalAlpha = 0.22; ci.fill(); ci.globalAlpha = 1;
+      ci.strokeStyle = C.accent; ci.lineWidth = 1.8; ci.beginPath();
+      for (let i = 0; i <= N; i++) { const deg = -90 + 180 * i / N, x = X(deg), y = Y(farI(deg * PI / 180, d, a)); if (i) ci.lineTo(x, y); else ci.moveTo(x, y); }
+      ci.stroke();
+      ci.strokeStyle = C.warm; ci.lineWidth = 1.5; ci.setLineDash([5, 4]); ci.beginPath();
+      for (let i = 0; i <= N; i++) { const deg = -90 + 180 * i / N, q = sinc(PI * a * Math.sin(deg * PI / 180)), x = X(deg), y = Y(q * q); if (i) ci.lineTo(x, y); else ci.moveTo(x, y); }
+      ci.stroke(); ci.setLineDash([]);
+      ci.fillStyle = C.violet; ci.font = MONO; ci.textAlign = 'center'; ci.textBaseline = 'bottom';
+      for (let m = -12; m <= 12; m++) { const th = orderAngle(m, d); if (isNaN(th) || Math.abs(m) >= d - 1e-9) continue; const deg = th * 180 / PI; ci.beginPath(); ci.arc(X(deg), top - 4, 2.5, 0, TAU); ci.fill(); if (Math.abs(m) <= 3 && W > 300) ci.fillText(String(m), X(deg), top + 12); }
+    }
+    function readouts() {
+      const th = orderAngle(1, d), maxm = Math.ceil(d - 1e-9) - 1;
+      setText('wd-th', isNaN(th) ? '—' : (th * 180 / PI).toFixed(1) + '°');
+      setText('wd-n', String(2 * maxm + 1) + ' 本');
+      setText('wd-env', a > 1 ? (Math.asin(1 / a) * 180 / PI).toFixed(1) + '°' : 'なし(全方向)');
+      const q = d / a, rq = Math.round(q);
+      if (Math.abs(q - rq) < 0.02 && rq >= 1 && rq < d) { const l = []; for (let m = rq; m < d && l.length < 3; m += rq) l.push(m); setText('wd-miss', l.join(', ') + ' 次'); }
+      else setText('wd-miss', 'なし');
+    }
+    function resize() { const A = fit(cvM), B = fit(cvI); cm = A.ctx; sm = A; ci = B.ctx; si = B; }
+    function frame(dt) { if (!paused) t += dt; drawMap(); drawI(); readouts(); }
+    bindRange('wd-d', (v) => v.toFixed(1), (v) => { d = v; dirty = true; });
+    bindRange('wd-a', (v) => v.toFixed(1), (v) => { a = v; dirty = true; });
+    $('wd-ray').addEventListener('change', (e) => { rays = e.target.checked; });
+    $('wd-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('wd-pause', paused); });
+    $('wd-reset').addEventListener('click', () => { t = 0; });
+    setPauseLabel('wd-pause', paused);
+    return { frame: frame, resize: resize, invalidate: () => {} };
+  })();
+
+  /* ---------- 2. 群速度と位相速度 ---------- */
+  const WG = (function () {
+    const cvW = $('cv-wg'), cvD = $('cv-wgd'), X0 = -15, XL = -30, XR = 50, NX = 360;
+    let cw, sw = { w: 0, h: 0 }, cd, sd = { w: 0, h: 0 };
+    let type = 0, k0 = 2, sk = 0.25, t = 0, paused = RM, hold = 0, peakHist = [];
+    function rate() { return 6 / dispVg(type, k0); }
+    function reset() { t = 0; hold = 0; peakHist = []; }
+    function sample(tt) {
+      const vals = [], env = []; let bi = 0, bv = -1;
+      for (let i = 0; i <= NX; i++) {
+        const x = XL + (XR - XL) * i / NX, p = packetAt(type, k0, sk, x - X0, tt), e = Math.hypot(p[0], p[1]);
+        vals.push(p[0]); env.push(e); if (e > bv) { bv = e; bi = i; }
+      }
+      // 放物線補間で最大点を求める
+      let xp = XL + (XR - XL) * bi / NX;
+      if (bi > 0 && bi < NX) { const y0 = env[bi - 1], y1 = env[bi], y2 = env[bi + 1], den = y0 - 2 * y1 + y2; if (Math.abs(den) > 1e-12) xp += 0.5 * (y0 - y2) / den * (XR - XL) / NX; }
+      return { vals: vals, env: env, xp: xp, emax: bv };
+    }
+    function draw() {
+      const W = sw.w, H = sw.h, l = 10, r = W - 10, top = 12, bot = H - 30, mid = (top + bot) / 2, X = (x) => l + (x - XL) / (XR - XL) * (r - l), Hh = (bot - top) / 2 * 0.9;
+      cw.clearRect(0, 0, W, H); cw.fillStyle = C.stage; cw.fillRect(0, 0, W, H);
+      const s = sample(t);
+      drawAxisX(cw, l, r, XL, XR, bot, 10, 0);
+      cw.strokeStyle = C.line; cw.lineWidth = 1; cw.beginPath(); cw.moveTo(l, mid); cw.lineTo(r, mid); cw.stroke();
+      cw.fillStyle = C['ink-3']; cw.font = MONO; cw.textAlign = 'right'; cw.textBaseline = 'top'; cw.fillText('位置 x', r, 2);
+      for (const sg of [1, -1]) { cw.strokeStyle = C.warm; cw.lineWidth = 1.5; cw.setLineDash([5, 3]); cw.beginPath(); for (let i = 0; i <= NX; i++) { const x = X(XL + (XR - XL) * i / NX), y = mid - sg * s.env[i] * Hh; if (i) cw.lineTo(x, y); else cw.moveTo(x, y); } cw.stroke(); cw.setLineDash([]); }
+      cw.strokeStyle = C.accent; cw.lineWidth = 1.8; cw.lineJoin = 'round'; cw.beginPath();
+      for (let i = 0; i <= NX; i++) { const x = X(XL + (XR - XL) * i / NX), y = mid - s.vals[i] * Hh; if (i) cw.lineTo(x, y); else cw.moveTo(x, y); }
+      cw.stroke();
+      // 位相速度で動く点(最初の山 x = X0 から出発)
+      const xph = X0 + dispVp(type, k0) * t;
+      if (xph > XL && xph < XR) { const p = packetAt(type, k0, sk, xph - X0, t); cw.fillStyle = C.violet; cw.strokeStyle = C.surface; cw.lineWidth = 2; cw.beginPath(); cw.arc(X(xph), mid - p[0] * Hh, 6, 0, TAU); cw.fill(); cw.stroke(); }
+      // 群速度で動く線
+      const xg = X0 + dispVg(type, k0) * t;
+      if (xg > XL && xg < XR) { cw.strokeStyle = C.violet; cw.lineWidth = 1.2; cw.setLineDash([2, 3]); cw.beginPath(); cw.moveTo(X(xg), top); cw.lineTo(X(xg), bot); cw.stroke(); cw.setLineDash([]); }
+      return s;
+    }
+    function drawDisp() {
+      const W = sd.w, H = sd.h, l = 34, r = W - 14, top = 14, bot = H - 30, KM = 5, WMAX = Math.max(dispW(type, KM), 1) * 1.05;
+      const X = (k) => l + k / KM * (r - l), Y = (w) => bot - w / WMAX * (bot - top);
+      cd.clearRect(0, 0, W, H); cd.fillStyle = C.stage; cd.fillRect(0, 0, W, H);
+      drawAxisX(cd, l, r, 0, KM, bot, 1, 0);
+      cd.strokeStyle = C.line; cd.lineWidth = 1; cd.beginPath(); cd.moveTo(l, top); cd.lineTo(l, bot); cd.stroke();
+      cd.fillStyle = C['ink-3']; cd.font = MONO; cd.textAlign = 'right'; cd.textBaseline = 'middle';
+      const ys = niceStep(WMAX / 4); for (let v = 0; v <= WMAX; v += ys) { cd.fillText(v.toFixed(ys < 1 ? 1 : 0), l - 5, Y(v)); cd.strokeStyle = C.grid; cd.beginPath(); cd.moveTo(l, Y(v)); cd.lineTo(r, Y(v)); cd.stroke(); }
+      cd.textAlign = 'left'; cd.textBaseline = 'top'; cd.fillText('ω', l + 4, top - 2); cd.textAlign = 'right'; cd.fillText('k', r, bot + 20);
+      cd.strokeStyle = C.ink; cd.lineWidth = 2; cd.beginPath();
+      for (let i = 0; i <= 100; i++) { const k = KM * i / 100, x = X(k), y = Y(dispW(type, k)); if (i) cd.lineTo(x, y); else cd.moveTo(x, y); }
+      cd.stroke();
+      const w0 = dispW(type, k0), vg = dispVg(type, k0);
+      cd.strokeStyle = C.accent; cd.lineWidth = 1.6; cd.setLineDash([5, 3]); cd.beginPath(); cd.moveTo(X(0), Y(0)); cd.lineTo(X(k0 * 1.8), Y(w0 * 1.8)); cd.stroke(); cd.setLineDash([]);
+      const ka = Math.max(0, k0 - 1.5), kb = Math.min(KM, k0 + 1.5);
+      cd.strokeStyle = C.violet; cd.lineWidth = 1.8; cd.beginPath(); cd.moveTo(X(ka), Y(w0 + vg * (ka - k0))); cd.lineTo(X(kb), Y(w0 + vg * (kb - k0))); cd.stroke();
+      cd.fillStyle = C.warm; cd.strokeStyle = C.surface; cd.lineWidth = 2; cd.beginPath(); cd.arc(X(k0), Y(w0), 5.5, 0, TAU); cd.fill(); cd.stroke();
+      cd.font = MONO; cd.textAlign = 'left'; cd.textBaseline = 'top'; cd.fillStyle = C.accent; cd.fillText('— 原点との傾き = 位相速度', l + 8, top + 12); cd.fillStyle = C.violet; cd.fillText('— 接線の傾き = 群速度', l + 8, top + 26);
+    }
+    function readouts(s) {
+      setText('wg-vp', dispVp(type, k0).toFixed(3)); setText('wg-vg', dispVg(type, k0).toFixed(3)); setText('wg-t', t.toFixed(1));
+      if (peakHist.length > 3) { const a = peakHist[0], b = peakHist[peakHist.length - 1]; setText('wg-vm', ((b[1] - a[1]) / (b[0] - a[0])).toFixed(3)); } else setText('wg-vm', '—');
+    }
+    function resize() { const A = fit(cvW), B = fit(cvD); cw = A.ctx; sw = A; cd = B.ctx; sd = B; }
+    function frame(dt) {
+      if (!paused) {
+        if (hold > 0) { hold -= dt; if (hold <= 0) reset(); }
+        else {
+          t += dt * rate();
+          const x = X0 + dispVg(type, k0) * t;
+          if (x > XR - 6) hold = 1.2;
+        }
+      }
+      const s = draw(); drawDisp();
+      if (!paused && hold <= 0 && s.emax > 0.3) { peakHist.push([t, s.xp]); if (peakHist.length > 40) peakHist.shift(); }
+      readouts(s);
+    }
+    bindChips('wg-type', (v) => { type = v; reset(); });
+    bindRange('wg-k', (v) => v.toFixed(1), (v) => { k0 = v; reset(); });
+    bindRange('wg-s', (v) => v.toFixed(2), (v) => { sk = v; reset(); });
+    $('wg-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('wg-pause', paused); });
+    $('wg-reset').addEventListener('click', reset);
+    setPauseLabel('wg-pause', paused);
+    return { frame: frame, resize: resize, invalidate: () => {} };
+  })();
+
+  /* ---------- 3. ドップラー効果 ---------- */
+  const WP = (function () {
+    const cvP = $('cv-wp'), cvF = $('cv-wpf'), T0 = 0.8, XV = 11, OBS_A = 9.5, OBS_B = -9.5, X_START = -6, X_END = 6, MAXR = 30;
+    let cp, sp = { w: 0, h: 0 }, cf, sf = { w: 0, h: 0 };
+    let M = 0.5, t = 0, speed = 2, paused = RM, nextEmit = 0, fronts = [], hold = 0;
+    const x0 = () => (M < 0.02 ? 0 : X_START);
+    function reset() { t = 0; nextEmit = 0; fronts = []; hold = 0; }
+    function srcX(tt) { return dopSrcX(tt, M, x0()); }
+    function step(dt) {
+      if (paused) return;
+      if (hold > 0) { hold -= dt; if (hold <= 0) reset(); return; }
+      t += dt * speed;
+      while (nextEmit <= t) {
+        const te = nextEmit;
+        fronts.push({ te: te, sx: srcX(te), aA: dopArrival(te, M, x0(), OBS_A, 0), aB: dopArrival(te, M, x0(), OBS_B, 0) });
+        nextEmit += T0;
+      }
+      fronts = fronts.filter((f) => t - f.te < MAXR);
+      if (M >= 0.02 && srcX(t) > X_END) hold = 1.0;
+    }
+    function measure(key) {
+      let i1 = -1, i2 = -1;
+      for (let i = fronts.length - 1; i >= 0; i--) if (fronts[i][key] <= t) { if (i1 < 0) i1 = i; else { i2 = i; break; } }
+      if (i2 < 0) return NaN;
+      const dtv = fronts[i1][key] - fronts[i2][key];
+      return dtv > 1e-9 ? T0 / dtv : Infinity;
+    }
+    function drawView() {
+      const W = sp.w, H = sp.h, S = W / (2 * XV), cx = W / 2, cy = H / 2, PX = (x) => cx + x * S, PY = (y) => cy - y * S;
+      cp.clearRect(0, 0, W, H); cp.fillStyle = C.stage; cp.fillRect(0, 0, W, H);
+      cp.save(); cp.beginPath(); cp.rect(0, 0, W, H); cp.clip();
+      cp.lineWidth = 1.6;
+      for (const f of fronts) {
+        const r = t - f.te; if (r <= 0) continue;
+        cp.strokeStyle = C.accent; cp.globalAlpha = Math.max(0.18, 1 - r / MAXR);
+        cp.beginPath(); cp.arc(PX(f.sx), PY(0), r * S, 0, TAU); cp.stroke();
+      }
+      cp.globalAlpha = 1;
+      const sx = srcX(t);
+      if (M > 1) {
+        const al = machAngle(M); cp.strokeStyle = C.warm; cp.lineWidth = 1.6; cp.setLineDash([6, 4]);
+        for (const sg of [1, -1]) { cp.beginPath(); cp.moveTo(PX(sx), PY(0)); cp.lineTo(PX(sx) - Math.cos(al) * W * 2, PY(0) + sg * Math.sin(al) * W * 2); cp.stroke(); }
+        cp.setLineDash([]);
+      }
+      cp.restore();
+      for (const [ox, nm] of [[OBS_A, 'A'], [OBS_B, 'B']]) {
+        cp.fillStyle = C.violet; cp.strokeStyle = C.surface; cp.lineWidth = 2; cp.beginPath(); cp.arc(PX(ox), PY(0), 6, 0, TAU); cp.fill(); cp.stroke();
+        cp.fillStyle = C.violet; cp.font = SANS; cp.textAlign = 'center'; cp.textBaseline = 'bottom'; cp.fillText(nm, PX(ox), PY(0) - 10);
+      }
+      cp.fillStyle = C.warm; cp.strokeStyle = C.surface; cp.lineWidth = 2; cp.beginPath(); cp.arc(PX(sx), PY(0), 7, 0, TAU); cp.fill(); cp.stroke();
+      if (M > 0.02) arrow(cp, PX(sx) + 10, PY(0), PX(sx) + 10 + 14 + 22 * Math.min(M, 1.6), PY(0), C.warm, 2);
+    }
+    function drawGraph() {
+      const W = sf.w, H = sf.h, l = 34, r = W - 14, top = 12, bot = H - 30, MX = 1.6, YMAX = 6;
+      const X = (m) => l + m / MX * (r - l), Y = (v) => bot - Math.min(v, YMAX) / YMAX * (bot - top);
+      cf.clearRect(0, 0, W, H); cf.fillStyle = C.stage; cf.fillRect(0, 0, W, H);
+      drawAxisX(cf, l, r, 0, MX, bot, 0.5, 1);
+      cf.strokeStyle = C.line; cf.lineWidth = 1; cf.beginPath(); cf.moveTo(l, top); cf.lineTo(l, bot); cf.stroke();
+      cf.fillStyle = C['ink-3']; cf.font = MONO; cf.textAlign = 'right'; cf.textBaseline = 'middle';
+      for (let v = 0; v <= YMAX; v += 1) { cf.fillText(String(v), l - 5, Y(v)); cf.strokeStyle = C.grid; cf.beginPath(); cf.moveTo(l, Y(v)); cf.lineTo(r, Y(v)); cf.stroke(); }
+      cf.textAlign = 'right'; cf.textBaseline = 'top'; cf.fillText('音源の速さ M', r, bot + 20);
+      cf.strokeStyle = C['ink-3']; cf.setLineDash([3, 4]); cf.beginPath(); cf.moveTo(X(1), top); cf.lineTo(X(1), bot); cf.stroke(); cf.setLineDash([]);
+      cf.strokeStyle = C.accent; cf.lineWidth = 2.2; cf.beginPath();
+      for (let i = 0; i <= 200; i++) { const m = 0.995 * i / 200, x = X(m), y = Y(dopFreqRatio(m, true)); if (i) cf.lineTo(x, y); else cf.moveTo(x, y); }
+      cf.stroke();
+      cf.strokeStyle = C.warm; cf.beginPath();
+      for (let i = 0; i <= 160; i++) { const m = MX * i / 160, x = X(m), y = Y(dopFreqRatio(m, false)); if (i) cf.lineTo(x, y); else cf.moveTo(x, y); }
+      cf.stroke();
+      cf.font = MONO; cf.textAlign = 'left'; cf.textBaseline = 'top'; cf.fillStyle = C.accent; cf.fillText('前方 A: 1/(1−M)', l + 8, top + 4); cf.fillStyle = C.warm; cf.fillText('後方 B: 1/(1+M)', l + 8, top + 18);
+      cf.strokeStyle = C.violet; cf.lineWidth = 1.2; cf.beginPath(); cf.moveTo(X(M), top); cf.lineTo(X(M), bot); cf.stroke();
+      if (M < 1) { cf.fillStyle = C.accent; cf.beginPath(); cf.arc(X(M), Y(dopFreqRatio(M, true)), 5, 0, TAU); cf.fill(); }
+      cf.fillStyle = C.warm; cf.beginPath(); cf.arc(X(M), Y(dopFreqRatio(M, false)), 5, 0, TAU); cf.fill();
+    }
+    function readouts() {
+      const sub = M < 1;
+      setText('wp-ft', sub ? (M === 0 ? '1.00' : dopFreqRatio(M, true).toFixed(2)) : '衝撃波');
+      setText('wp-bt', dopFreqRatio(M, false).toFixed(2));
+      const fa = measure('aA'), fb = measure('aB');
+      setText('wp-fm', !sub ? '—' : isNaN(fa) ? '—' : isFinite(fa) ? fa.toFixed(2) : '∞');
+      setText('wp-bm', !sub ? '—' : isNaN(fb) ? '—' : fb.toFixed(2));
+      setText('wp-ma', M > 1 ? (machAngle(M) * 180 / PI).toFixed(1) + '°' : 'なし');
+    }
+    function resize() { const A = fit(cvP), B = fit(cvF); cp = A.ctx; sp = A; cf = B.ctx; sf = B; }
+    function frame(dt) { step(Math.min(dt, 0.05)); drawView(); drawGraph(); readouts(); }
+    bindRange('wp-m', (v) => v.toFixed(2), (v) => { M = v; reset(); });
+    bindChips('wp-speed', (v) => { speed = v; });
+    $('wp-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('wp-pause', paused); });
+    $('wp-reset').addEventListener('click', reset);
+    setPauseLabel('wp-pause', paused);
+    return { frame: frame, resize: resize, invalidate: () => {} };
+  })();
+
+  startApp(['wd', 'wg', 'wp'], { wd: WD, wg: WG, wp: WP });
+})();
+</script>
+</body></html>

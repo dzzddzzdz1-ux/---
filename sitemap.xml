@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://simphys.xyz/</loc><lastmod>2026-10-18</lastmod></url>
-  <url><loc>https://simphys.xyz/mechanics.html</loc><lastmod>2026-10-18</lastmod></url>
-  <url><loc>https://simphys.xyz/em.html</loc><lastmod>2026-10-18</lastmod></url>
-  <url><loc>https://simphys.xyz/quantum.html</loc><lastmod>2026-10-18</lastmod></url>
-  <url><loc>https://simphys.xyz/thermo.html</loc><lastmod>2026-10-18</lastmod></url>
-  <url><loc>https://simphys.xyz/about.html</loc><lastmod>2026-10-18</lastmod></url>
-  <url><loc>https://simphys.xyz/privacy.html</loc><lastmod>2026-10-18</lastmod></url>
+  <url><loc>https://simphys.xyz/</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/mechanics.html</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/em.html</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/quantum.html</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/thermo.html</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/wave.html</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/rel.html</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/about.html</loc><lastmod>2026-10-19</lastmod></url>
+  <url><loc>https://simphys.xyz/privacy.html</loc><lastmod>2026-10-19</lastmod></url>
 </urlset>

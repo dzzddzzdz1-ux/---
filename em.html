@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>電磁気ラボ | SimPhys</title>
-<meta name="description" content="電場と電位、磁場中の荷電粒子、電磁波と薄膜干渉を動かして確かめる、学部電磁気学のシミュレーション。">
+<meta name="description" content="電場と電位、磁場中の荷電粒子、電磁波と薄膜干渉、電磁誘導、RLC回路の共鳴、アンペールの法則を動かして確かめる、学部電磁気学のシミュレーション。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
@@ -188,13 +188,16 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
   <header class="head">
     <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 電磁気 · 試作</p>
     <h1>電磁気ラボ</h1>
-    <p class="lede">式だけだと追いにくい、場の広がりと向きを、動かして確かめるためのページです。静電場、磁場中の荷電粒子、電磁波の3つを試作しました。</p>
+    <p class="lede">式だけだと追いにくい、場の広がりと向きを、動かして確かめるためのページです。静電場、磁場中の荷電粒子、電磁波、電磁誘導、RLC回路、アンペールの法則の6つを用意しています。</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
     <button class="tab" role="tab" id="tab-ef" aria-controls="panel-ef" aria-selected="true" tabindex="0">電場と電位</button>
     <button class="tab" role="tab" id="tab-cp" aria-controls="panel-cp" aria-selected="false" tabindex="-1">荷電粒子</button>
     <button class="tab" role="tab" id="tab-ew" aria-controls="panel-ew" aria-selected="false" tabindex="-1">電磁波</button>
+    <button class="tab" role="tab" id="tab-fa" aria-controls="panel-fa" aria-selected="false" tabindex="-1">電磁誘導</button>
+    <button class="tab" role="tab" id="tab-rl" aria-controls="panel-rl" aria-selected="false" tabindex="-1">RLC回路</button>
+    <button class="tab" role="tab" id="tab-am" aria-controls="panel-am" aria-selected="false" tabindex="-1">アンペール</button>
   </div>
 
   <!-- 1. 電場と電位 -->
@@ -512,6 +515,293 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     </div>
   </section>
 
+  <!-- 4. 電磁誘導 -->
+  <section class="panel" id="panel-fa" role="tabpanel" aria-labelledby="tab-fa" hidden>
+    <div class="intro">
+      <h2>磁石を動かした瞬間にだけ、コイルに電圧が生まれる</h2>
+      <p>コイルを貫く磁束が変化すると、その変化を打ち消す向きの起電力が生じます。磁石がコイルの中で止まっていれば、強い磁場の中でも電圧はゼロです。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-fa" class="touchable" data-aspect="0.5" role="img" aria-label="棒磁石がコイルの軸に沿って動く様子の横からの図。コイルに流れる誘導電流の向きが点と×印で示される。"></canvas></div>
+          <figcaption>
+            <span><i class="dot warm"></i>N極</span>
+            <span><i class="dot accent"></i>S極</span>
+            <span><i class="dot green"></i>磁石にはたらくブレーキの力</span>
+            <span>⊙ ⊗: コイルを流れる誘導電流(手前向き・奥向き)</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-fg" data-aspect="0.5" role="img" aria-label="コイルを貫く磁束 Φ と起電力 ε の時間変化のグラフ。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>磁束 Φ</span>
+            <span><i class="dot warm"></i>起電力 ε = −N dΦ/dt</span>
+            <span>右端が現在、左へ過去</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>磁石の動かし方(図を触っても動かせます)</span></span>
+          <div class="btns" id="fa-mode">
+            <button class="chip" data-v="0" aria-pressed="true">通過</button>
+            <button class="chip" data-v="1" aria-pressed="false">往復</button>
+            <button class="chip" data-v="2" aria-pressed="false">手で動かす</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>磁石の向き</span></span>
+          <div class="btns" id="fa-dir">
+            <button class="chip" data-v="1" aria-pressed="true">N が右</button>
+            <button class="chip" data-v="-1" aria-pressed="false">N が左</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="fa-spd"><span>磁石の速さ</span><output id="fa-spd-v"></output></label>
+          <input type="range" id="fa-spd" min="0.3" max="3" step="0.1" value="1">
+        </div>
+        <div class="field">
+          <label for="fa-n"><span>コイルの巻き数 N</span><output id="fa-n-v"></output></label>
+          <input type="range" id="fa-n" min="1" max="5" step="1" value="1">
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="fa-pause">一時停止</button>
+          <button class="btn" id="fa-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">磁束 Φ</span><span class="v" id="fa-phi">0</span></div>
+          <div class="meter"><span class="k">起電力 ε</span><span class="v" id="fa-emf">0</span></div>
+          <div class="meter"><span class="k">誘導電流</span><span class="v" id="fa-cur">—</span></div>
+          <div class="meter"><span class="k">直近の |ε| の最大</span><span class="v" id="fa-max">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>「通過」では、起電力は+と−の山を1つずつ作ります。磁石が近づくときと遠ざかるときで、磁束の変化の向きが逆だからです。</li>
+        <li>山の位置は、コイルの半径の半分だけ手前と奥です。磁石がちょうどコイルの真ん中にあるときは、磁束は最大でも、その変化がないので起電力はゼロです。</li>
+        <li>速さを2倍にすると、山の高さは2倍、幅は半分になります。山の面積(= 磁束の変化の総量)は変わりません。</li>
+        <li>「手で動かす」で磁石をコイルの中に置いたまま止めると、起電力は消えます。「磁場がある」ことと「磁場が変化している」ことは別です。</li>
+        <li>緑の矢印は、誘導電流が磁石に及ぼす力です。近づくときは押し返し、離れるときは引き止めます。これがレンツの法則です(向きは正確、長さは目安)。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>ε</i> = −<i>N</i> d<i>Φ</i>/d<i>t</i></span>
+        <span class="ln"><i>Φ</i>(<i>z</i>) ∝ <i>R</i>² / (<i>R</i>² + <i>z</i>²)<sup>3/2</sup></span>
+      </div>
+      <p class="foot">磁石を点の磁気双極子として扱い、軸上の磁束 Φ(z) を使っています。コイルの自己インダクタンスは無視しているので、誘導電流がつくる磁場は計算に入れていません。</p>
+    </div>
+  
+    <div class="more" data-more="fa">
+      <h3>もう少し詳しく</h3>
+      <p>コイルを貫く磁束 Φ が時間変化すると、コイルに起電力 ε = −N dΦ/dt が生じます(ファラデーの法則)。マイナス符号は、誘導電流がつくる磁場が、もとの磁束の変化を打ち消す向きになることを表します(レンツの法則)。</p>
+      <p>大事なのは、磁束そのものではなく、その変化の速さです。磁石がコイルの中で静止していれば、磁束は最大でも起電力はゼロです。逆に、同じ磁石でも速く動かすほど、短い時間で大きな起電力が生じます。</p>
+      <p>レンツの法則は、エネルギー保存の表れです。誘導電流が磁石の動きを妨げる力を及ぼすので、磁石を動かすには仕事が必要で、その仕事が電気エネルギー(熱)に変わります。もし逆向きに加速されるなら、エネルギーが無から生まれてしまいます。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「通過」で速さを 1 と 2 にして、起電力の山の高さと幅を比べます。</li>
+        <li>「手で動かす」で磁石をコイルの真ん中へ持っていき、止めます。そのあと左右にゆっくり、次に素早く動かして、起電力の大きさを比べます。</li>
+        <li>磁石の向きを反転して、起電力の山が上下逆になることを確かめます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>起電力が +と−の2つの山になるのはなぜですか。</dt>
+        <dd>近づくときは磁束が増え、離れるときは減るからです。磁束の変化の向きが逆なので、誘導電流の向きも逆になります。</dd>
+        <dt>巻き数を増やすと何が変わりますか。</dt>
+        <dd>巻き数 N の分だけ磁束が直列に足し合わされるので、起電力が N 倍になります。この図では、同じ磁束が N 回貫くものとして扱っています。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 5. RLC回路 -->
+  <section class="panel" id="panel-rl" role="tabpanel" aria-labelledby="tab-rl" hidden>
+    <div class="intro">
+      <h2>交流の周波数を変えると、回路はある周波数だけで大きく応える</h2>
+      <p>コイルとコンデンサと抵抗をつないだ回路に、交流電圧をかけます。コイルとコンデンサの効果が打ち消し合う周波数で、電流は最大になります。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-rl" data-aspect="0.5" role="img" aria-label="交流電圧と回路を流れる電流の時間変化。電流の位相が電圧からずれる。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>電圧 V(振幅 V₀ を 0.5 として表示)</span>
+            <span><i class="dot warm"></i>電流 I(共鳴時の振幅 V₀/R を 1 として表示)</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-rc" data-aspect="0.55" role="img" aria-label="電流の振幅と位相の周波数依存性を表す共鳴曲線。現在の周波数が点で示される。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>電流の振幅(最大を 1 に規格化)</span>
+            <span><i class="dot warm"></i>位相(+90° = 電流が遅れる)</span>
+            <span>縦の破線: 共鳴の角周波数 ω₀</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="rl-w"><span>電源の角周波数 ω</span><output id="rl-w-v"></output></label>
+          <input type="range" id="rl-w" min="0.3" max="2.2" step="0.01" value="0.7">
+        </div>
+        <div class="field">
+          <label for="rl-R"><span>抵抗 R</span><output id="rl-R-v"></output></label>
+          <input type="range" id="rl-R" min="0.1" max="2" step="0.05" value="0.3">
+        </div>
+        <div class="field">
+          <label for="rl-L"><span>コイルの L</span><output id="rl-L-v"></output></label>
+          <input type="range" id="rl-L" min="0.5" max="2" step="0.1" value="1">
+        </div>
+        <div class="field">
+          <label for="rl-C"><span>コンデンサの C</span><output id="rl-C-v"></output></label>
+          <input type="range" id="rl-C" min="0.5" max="2" step="0.1" value="1">
+        </div>
+        <div class="btns">
+          <button class="btn" id="rl-tune">ω を ω₀ に合わせる</button>
+          <button class="btn primary" id="rl-pause">一時停止</button>
+          <button class="btn" id="rl-reset">静止から始める</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">共鳴 ω₀ = 1/√(LC)</span><span class="v" id="rl-w0">0</span></div>
+          <div class="meter"><span class="k">Q 値 ω₀L/R</span><span class="v" id="rl-Q">0</span></div>
+          <div class="meter"><span class="k">インピーダンス |Z|</span><span class="v" id="rl-Z">0</span></div>
+          <div class="meter"><span class="k">位相(電流の遅れ)</span><span class="v" id="rl-ph">0</span></div>
+          <div class="meter"><span class="k">電流の振幅(理論)</span><span class="v" id="rl-ia">0</span></div>
+          <div class="meter"><span class="k">電流の振幅(測定)</span><span class="v" id="rl-im">計測中</span></div>
+          <div class="meter"><span class="k">平均の消費電力</span><span class="v" id="rl-pw">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>「ω を ω₀ に合わせる」を押すと、電流が電圧と同じ位相になり、振幅が V₀/R の最大値まで育ちます。このとき |Z| = R です。</li>
+        <li>ω が ω₀ より小さいとコンデンサの効果が勝って電流は電圧より進み、大きいとコイルの効果が勝って遅れます。共鳴曲線の橙の線がそれです。</li>
+        <li>抵抗 R を小さくすると、共鳴のピークが鋭くなります。山の半値幅は R/L で、Q 値が大きいほど狭くなります。ラジオの選局はこの性質を使っています。</li>
+        <li>「静止から始める」と、電流が最終的な振幅に落ち着くまでの過渡的な振る舞いが見えます。R が小さいほど落ち着くまで時間がかかります。</li>
+        <li>電力を消費するのは抵抗だけです。コイルとコンデンサはエネルギーをため込んで返すだけなので、位相がずれているほど平均の消費電力は小さくなります。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>L</i> d²<i>q</i>/d<i>t</i>² + <i>R</i> d<i>q</i>/d<i>t</i> + <i>q</i>/<i>C</i> = <i>V</i><sub>0</sub> cos <i>ωt</i></span>
+        <span class="ln">|<i>Z</i>| = √(<i>R</i>² + (<i>ωL</i> − 1/<i>ωC</i>)²),　tan <i>φ</i> = (<i>ωL</i> − 1/<i>ωC</i>) / <i>R</i></span>
+      </div>
+      <p class="foot">電圧の振幅 V₀ = 1 の無次元の単位で、4次のルンゲ・クッタ法で微分方程式を解いています。曲線は定常状態の理論値です。</p>
+    </div>
+  
+    <div class="more" data-more="rl">
+      <h3>もう少し詳しく</h3>
+      <p>抵抗 R、コイル L、コンデンサ C を直列につないで、交流電圧 V₀cos ωt をかけると、電流は電圧とは別の位相で振動します。コイルは電流の変化に逆らい、コンデンサは電荷がたまると電圧を押し返すので、どちらも電流の流れを妨げます。</p>
+      <p>コイルの効果 ωL と、コンデンサの効果 1/ωC は、符号が逆に働きます。ω² = 1/LC のときに両者がちょうど打ち消し合い、残る抵抗は R だけになって、電流が最大になります。これが共鳴です。強制振動のばねとおもりと、まったく同じ方程式です。</p>
+      <p>共鳴の鋭さは Q 値 = ω₀L/R で決まります。Q が大きい回路は、狭い範囲の周波数にだけ強く応えるので、ラジオやフィルターの選局に向いています。一方で、状態が落ち着くまでの時間も長くなります。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「ω を ω₀ に合わせる」を押して、電流の振幅が最大になり、電圧と同じ位相になるのを確かめます。</li>
+        <li>抵抗 R を 0.1 まで下げ、ω を ω₀ のまわりで少しずつ動かして、ピークの鋭さを見ます。</li>
+        <li>「静止から始める」を押して、振幅が育つまでの過渡的な振る舞いを観察します。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>電源の周波数と同じ周波数で振動するのはなぜですか。</dt>
+        <dd>十分に時間がたつと、回路が自分で持っていた固有の振動は抵抗で減衰して、電源に引っ張られた振動だけが残るからです。静止から始めた直後は、2つが混ざって見えます。</dd>
+        <dt>共鳴しても、電圧より電流が大きくなることはありますか。</dt>
+        <dd>電流と電圧は単位が違うので直接は比べられませんが、コイルとコンデンサにかかる電圧は、Q が大きければ電源電圧の Q 倍にもなります。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 6. アンペールの法則 -->
+  <section class="panel" id="panel-am" role="tabpanel" aria-labelledby="tab-am" hidden>
+    <div class="intro">
+      <h2>磁場をぐるっと一周たどると、囲んだ電流の合計がわかる</h2>
+      <p>紙面に垂直な電流がつくる磁場の中に、円を描きます。円に沿った磁場の合計は、磁場がどんな形でも、円の中を通る電流の合計だけで決まります。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-am" class="touchable" data-aspect="0.75" role="img" aria-label="紙面に垂直な直線電流がつくる磁力線と、その中に置いた円。円に沿った磁場の成分が小さな矢印で示される。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>磁力線</span>
+            <span><i class="dot warm"></i>積分する円</span>
+            <span><i class="dot green"></i>円に沿った磁場の成分</span>
+            <span>⊙: 手前向きの電流　⊗: 奥向きの電流(導線と円の中心はドラッグで動かせます)</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-ac" data-aspect="0.5" role="img" aria-label="円の半径を変えたときの、円に沿った磁場の合計と、円が囲む電流の合計の比較グラフ。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>数値積分した ∮B·dl</span>
+            <span><i class="dot warm"></i>囲んだ電流の合計 ΣI</span>
+            <span>横軸は円の半径</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>電流の配置</span></span>
+          <div class="btns" id="am-preset">
+            <button class="chip" data-v="0" aria-pressed="true">1本</button>
+            <button class="chip" data-v="1" aria-pressed="false">同じ向き2本</button>
+            <button class="chip" data-v="2" aria-pressed="false">逆向き2本</button>
+            <button class="chip" data-v="3" aria-pressed="false">3本</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="am-r"><span>円の半径</span><output id="am-r-v"></output></label>
+          <input type="range" id="am-r" min="0.3" max="3.5" step="0.05" value="1.2">
+        </div>
+        <label class="check"><input type="checkbox" id="am-lines" checked>磁力線</label>
+        <label class="check"><input type="checkbox" id="am-arr" checked>円に沿った成分</label>
+        <div class="meters">
+          <div class="meter"><span class="k">∮B·dl(数値積分)</span><span class="v" id="am-c">0</span></div>
+          <div class="meter"><span class="k">囲んだ電流の合計 ΣI</span><span class="v" id="am-i">0</span></div>
+          <div class="meter"><span class="k">円の中の導線</span><span class="v" id="am-n">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>導線が1本のとき、円の中心を導線からずらしても、半径をどう変えても、導線を囲んでいる限り ∮B·dl は同じ値です。円周が長くなるぶん、磁場が弱くなって帳尻が合います。</li>
+        <li>円の半径を広げて導線の位置をまたぐと、値が階段状に変わります。下のグラフの段差がその瞬間です。</li>
+        <li>導線を円の外へ出すと、円の上の磁場はゼロではないのに、一周の合計はゼロになります。行きに押された分を、帰りに引き戻されるからです。</li>
+        <li>「逆向き2本」の円で両方を囲むと、磁場は円上のあちこちで強く向きもばらばらなのに、合計はちょうど0です。囲んだ電流の合計が0だからです。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln">∮ <b>B</b> · d<b>l</b> = <i>μ</i><sub>0</sub> <i>I</i><sub>内</sub></span>
+        <span class="ln">直線電流: <i>B</i> = <i>μ</i><sub>0</sub> <i>I</i> / (2π<i>r</i>)</span>
+      </div>
+      <p class="foot">μ₀ = 1 の単位です。磁場は電流のまわりを右ねじの向きに回ります。磁力線は、磁場の向きに沿って1本ずつ数値的にたどっています。導線のすぐそばを通る円では、積分が定まらないので「—」を表示します。</p>
+    </div>
+  
+    <div class="more" data-more="am">
+      <h3>もう少し詳しく</h3>
+      <p>アンペールの法則は、磁場 B を閉じた経路に沿って一周足し合わせた値(周回積分)が、その経路が囲む面を貫く電流の合計に μ₀ をかけたものに等しい、という法則です。経路の形や、磁場がどのように分布しているかには、よりません。</p>
+      <p>直線電流のまわりの磁場は、電流から離れるほど B = μ₀I/2πr で弱くなります。円周は 2πr で長くなるので、掛け合わせると r が消えて、半径によらず一定になります。導線を囲まない経路では、磁場の「行き」と「帰り」が打ち消し合って、周回積分はゼロになります。</p>
+      <p>電流が対称な形をしているときは、磁場の向きと大きさが経路上で一定になるので、この法則だけから磁場の大きさが求まります。無限に長いソレノイドの内部の磁場がその例です。ただし、磁場が時間変化するときは、マクスウェルの変位電流の項が必要になります。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「1本」で、円の中心を導線からずらしても、数値が 1 のままであることを確かめます。</li>
+        <li>「逆向き2本」で、円の半径を広げて、導線をまたぐたびに値が変わる様子を見ます。</li>
+        <li>導線を円の外へドラッグして、円の上の磁場は残るのに、合計がゼロになることを確かめます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>磁場は導線を囲んでいない部分にも、あるのですか。</dt>
+        <dd>あります。囲んでいなくても、磁場は導線のまわりのどこにでも存在します。周回積分がゼロになるのは、磁場がないからではなく、一周すると打ち消し合うからです。</dd>
+        <dt>円の外にある電流は、円上の磁場に影響しないのですか。</dt>
+        <dd>影響します。円上の磁場は、すべての電流の寄与の合計です。ただし、周回積分の値には、円が囲んだ電流だけが現れます。</dd>
+      </dl>
+    </div>
+  </section>
+
   <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
   <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
 </div>
@@ -662,6 +952,65 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     const r = (n - 1) / (n + 1), s = Math.sin(2 * Math.PI * m);
     const num = 4 * r * r * s * s, den = (1 - r * r) * (1 - r * r) + num;
     return num / den;
+  }
+
+  // ---- 電磁誘導: 軸上の磁気双極子(向き ±)がつくる、半径 R のコイルを貫く磁束(係数は 1 に正規化) ----
+  function dipFlux(R, z) { return R * R / Math.pow(R * R + z * z, 1.5); }
+  function dipFluxDz(R, z) { return -3 * R * R * z / Math.pow(R * R + z * z, 2.5); }
+  // ---- 直列 RLC 回路: L q'' + R q' + q / C = V0 cos(w t)。状態 s = {q, i, t} ----
+  function rlcDeriv(q, i, t, L, R, C, V0, w) { return [i, (V0 * Math.cos(w * t) - R * i - q / C) / L]; }
+  function rlcStep(s, h, L, R, C, V0, w) {
+    const k1 = rlcDeriv(s.q, s.i, s.t, L, R, C, V0, w);
+    const k2 = rlcDeriv(s.q + 0.5 * h * k1[0], s.i + 0.5 * h * k1[1], s.t + 0.5 * h, L, R, C, V0, w);
+    const k3 = rlcDeriv(s.q + 0.5 * h * k2[0], s.i + 0.5 * h * k2[1], s.t + 0.5 * h, L, R, C, V0, w);
+    const k4 = rlcDeriv(s.q + h * k3[0], s.i + h * k3[1], s.t + h, L, R, C, V0, w);
+    s.q += h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+    s.i += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+    s.t += h;
+  }
+  function rlcZ(L, R, C, w) { return Math.hypot(R, w * L - 1 / (w * C)); }
+  // 電流が電圧より遅れる角(誘導性なら正)
+  function rlcPhase(L, R, C, w) { return Math.atan2(w * L - 1 / (w * C), R); }
+  // ---- アンペールの法則: 紙面に垂直な直線電流(I > 0 は手前向き)。μ0 = 1、B = I / (2π r) で反時計回り ----
+  function wireB(Wr, x, y) {
+    let bx = 0, by = 0;
+    for (const w of Wr) {
+      const dx = x - w.x, dy = y - w.y, r2 = dx * dx + dy * dy + 1e-6;
+      bx += -w.I * dy / (2 * Math.PI * r2); by += w.I * dx / (2 * Math.PI * r2);
+    }
+    return [bx, by];
+  }
+  // 中心 (cx, cy)、半径 r の円に沿った ∮B·dl。円が導線のすぐそばを通るときは NaN
+  function circulation(Wr, cx, cy, r, N) {
+    N = N || 720;
+    for (const w of Wr) if (Math.abs(Math.hypot(w.x - cx, w.y - cy) - r) < 0.04) return NaN;
+    let sum = 0;
+    for (let k = 0; k < N; k++) {
+      const a = 2 * Math.PI * (k + 0.5) / N, x = cx + r * Math.cos(a), y = cy + r * Math.sin(a);
+      const B = wireB(Wr, x, y);
+      sum += (-B[0] * Math.sin(a) + B[1] * Math.cos(a)) * r * 2 * Math.PI / N;
+    }
+    return sum;
+  }
+  function enclosedI(Wr, cx, cy, r) {
+    let s = 0;
+    for (const w of Wr) if (Math.hypot(w.x - cx, w.y - cy) < r) s += w.I;
+    return s;
+  }
+  // 磁力線(B の向きに RK4 で追う)。bnd の外へ出るか、始点に戻ったら終わり
+  function traceB(Wr, x0, y0, ds, nmax, bnd) {
+    const pts = [[x0, y0]];
+    let x = x0, y = y0;
+    const dir = (px, py) => { const B = wireB(Wr, px, py), m = Math.hypot(B[0], B[1]) || 1; return [B[0] / m, B[1] / m]; };
+    for (let n = 0; n < nmax; n++) {
+      const a = dir(x, y), b = dir(x + 0.5 * ds * a[0], y + 0.5 * ds * a[1]);
+      const c = dir(x + 0.5 * ds * b[0], y + 0.5 * ds * b[1]), d = dir(x + ds * c[0], y + ds * c[1]);
+      x += ds / 6 * (a[0] + 2 * b[0] + 2 * c[0] + d[0]); y += ds / 6 * (a[1] + 2 * b[1] + 2 * c[1] + d[1]);
+      pts.push([x, y]);
+      if (x < bnd.x0 || x > bnd.x1 || y < bnd.y0 || y > bnd.y1) break;
+      if (n > 6 && Math.hypot(x - x0, y - y0) < ds * 0.9) break;
+    }
+    return pts;
   }
   /* PHYSICS-END */
 
@@ -1142,9 +1491,423 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     return { frame: frame, resize: resize, invalidate: invalidate };
   })();
 
+  /* ---------- 4. 電磁誘導 ---------- */
+  const FA = (function () {
+    const cv = $('cv-fa'), cg = $('cv-fg');
+    const VIEW = 9, R = 1, ZMAX = 3.9, WIN = 8, DPMAX = 0.738;
+    let c, W = 0, Hh = 0, g, GW = 0, GH = 0, scale = 1;
+    let mode = 0, spd = 1, N = 1, sg = 1, paused = RM;
+    let z, zt, vz, clk, hold, phase, hist, escale, dragging = false;
+
+    function reset() { z = -ZMAX; zt = 0; vz = 0; clk = 0; hold = 0; phase = 0; hist = []; escale = 1; }
+    function advance(dt) {
+      if (mode === 2) {
+        const zp = z;
+        z += (zt - z) * Math.min(1, 14 * dt);
+        vz += ((z - zp) / Math.max(dt, 1e-3) - vz) * 0.4;
+      } else if (!paused) {
+        if (mode === 0) {
+          if (hold > 0) { hold -= dt; vz = 0; }
+          else { vz = spd; z += vz * dt; if (z > ZMAX) { z = -ZMAX; hold = 0.7; vz = 0; } }
+        } else {
+          phase += dt * 0.6 * spd;
+          z = 3 * Math.sin(phase); vz = 3 * 0.6 * spd * Math.cos(phase);
+        }
+      } else { vz = 0; }
+      if (!paused || mode === 2) clk += dt;
+      const phi = sg * N * dipFlux(R, z), emf = -sg * N * dipFluxDz(R, z) * vz;
+      if (!paused || mode === 2) hist.push([clk, phi, emf]);
+      while (hist.length && hist[0][0] < clk - WIN) hist.shift();
+      let mx = 0.5;
+      for (const h of hist) mx = Math.max(mx, Math.abs(h[2]));
+      escale = mx > escale ? mx : escale + (mx - escale) * 0.02;
+      return [phi, emf];
+    }
+    function drawScene(phi, emf) {
+      const sx = (x) => W / 2 + x * scale, sy = (y) => Hh / 2 - y * scale;
+      c.clearRect(0, 0, W, Hh);
+      c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      c.strokeStyle = C.grid; c.lineWidth = 1; c.setLineDash([4, 4]);
+      c.beginPath(); c.moveTo(0, sy(0)); c.lineTo(W, sy(0)); c.stroke(); c.setLineDash([]);
+      // コイル(横から見た輪)
+      const rx = Math.max(3, 0.1 * scale);
+      c.strokeStyle = C['ink-2']; c.lineWidth = 2.2;
+      for (let k = 0; k < N; k++) {
+        const x = sx((k - (N - 1) / 2) * 0.16);
+        c.beginPath(); c.ellipse(x, sy(0), rx, R * scale, 0, 0, TAU); c.stroke();
+      }
+      // 誘導電流(輪の上端と下端の断面)
+      const a = Math.min(1, Math.abs(emf) / (0.12 * escale + 1e-9));
+      if (a > 0.08) {
+        c.globalAlpha = Math.min(1, a);
+        const out = emf > 0;
+        for (const top of [true, false]) {
+          const px = sx(0), py = sy(top ? R : -R), dotOut = top ? out : !out;
+          c.fillStyle = C.surface; c.strokeStyle = C.green; c.lineWidth = 2;
+          c.beginPath(); c.arc(px, py, 8, 0, TAU); c.fill(); c.stroke();
+          c.fillStyle = C.green; c.strokeStyle = C.green;
+          if (dotOut) { c.beginPath(); c.arc(px, py, 2.6, 0, TAU); c.fill(); }
+          else { c.beginPath(); c.moveTo(px - 4, py - 4); c.lineTo(px + 4, py + 4); c.moveTo(px + 4, py - 4); c.lineTo(px - 4, py + 4); c.stroke(); }
+        }
+        c.globalAlpha = 1;
+      }
+      // 磁石
+      const mw = 1.7 * scale, mh = 0.7 * scale, mx = sx(z) - mw / 2, my = sy(0) - mh / 2;
+      const left = sg > 0 ? C.accent : C.warm, right = sg > 0 ? C.warm : C.accent;
+      c.fillStyle = left; c.fillRect(mx, my, mw / 2, mh);
+      c.fillStyle = right; c.fillRect(mx + mw / 2, my, mw / 2, mh);
+      c.strokeStyle = C.surface; c.lineWidth = 1.5; c.strokeRect(mx, my, mw, mh);
+      c.fillStyle = C.surface; c.font = 'bold 13px ' + MONO.slice(5); c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(sg > 0 ? 'S' : 'N', mx + mw / 4, sy(0)); c.fillText(sg > 0 ? 'N' : 'S', mx + 3 * mw / 4, sy(0));
+      // 速度とブレーキの力
+      if (Math.abs(vz) > 0.03) {
+        const dir = vz > 0 ? 1 : -1, y0 = sy(0) - mh / 2 - 12;
+        arrow(c, sx(z), y0, sx(z) + dir * Math.min(70, 14 + 16 * Math.abs(vz)), y0, C['ink-3'], 2);
+        const dp = dipFluxDz(R, z), L = Math.min(56, 52 * dp * dp * Math.abs(vz) / DPMAX);
+        if (L > 3) { const y1 = sy(0) + mh / 2 + 14; arrow(c, sx(z), y1, sx(z) - dir * L, y1, C.green, 3); }
+      }
+      c.fillStyle = C['ink-3']; c.font = MONO; c.textAlign = 'right'; c.textBaseline = 'bottom';
+      c.fillText('コイルの軸に沿って磁石が動く', W - 8, Hh - 6);
+    }
+    function drawGraph(phi, emf) {
+      g.clearRect(0, 0, GW, GH);
+      g.fillStyle = C.stage; g.fillRect(0, 0, GW, GH);
+      const x0 = 8, x1 = GW - 8, y0 = 30, y1 = GH - 12, ym = (y0 + y1) / 2, hh = (y1 - y0) / 2;
+      g.strokeStyle = C.grid; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x0, ym); g.lineTo(x1, ym); g.stroke();
+      g.strokeStyle = C.line; g.setLineDash([3, 4]);
+      g.beginPath(); g.moveTo(x1, y0 - 4); g.lineTo(x1, y1 + 2); g.stroke(); g.setLineDash([]);
+      const tx = (t) => x1 - (clk - t) / WIN * (x1 - x0);
+      const es = 1.15 * escale, ps = 1.1 * N;
+      function trace(idx, scl, col) {
+        g.strokeStyle = col; g.lineWidth = 2.2; g.lineJoin = 'round'; g.beginPath();
+        let started = false, tp = null;
+        for (const h of hist) {
+          const x = tx(h[0]), y = ym - h[idx] / scl * hh;
+          if (!started || (tp !== null && h[0] - tp > 0.3)) { g.moveTo(x, y); started = true; } else g.lineTo(x, y);
+          tp = h[0];
+        }
+        g.stroke();
+      }
+      trace(1, ps, C.accent); trace(2, es, C.warm);
+      g.font = MONO; g.textBaseline = 'top'; g.textAlign = 'left';
+      g.fillStyle = C.accent; g.fillText('Φ  目盛り ±' + ps.toFixed(1), x0 + 2, 6);
+      g.fillStyle = C.warm; g.fillText('ε  目盛り ±' + es.toFixed(1), x0 + 2, 18);
+    }
+    function meters(phi, emf) {
+      setText('fa-phi', fmt(phi, 2));
+      setText('fa-emf', fmt(emf, 2));
+      setText('fa-cur', Math.abs(emf) < 0.03 * escale || Math.abs(emf) < 0.02 ? '流れていない' : (emf > 0 ? '右から見て反時計回り' : '右から見て時計回り'));
+      let mx = 0; for (const h of hist) mx = Math.max(mx, Math.abs(h[2]));
+      setText('fa-max', mx.toFixed(2));
+    }
+
+    function toWorldX(e) { const r = cv.getBoundingClientRect(); return ((e.clientX - r.left) * (W / r.width) - W / 2) / scale; }
+    function clampZ(x) { return Math.max(-ZMAX - 0.4, Math.min(ZMAX + 0.4, x)); }
+    cv.addEventListener('pointerdown', (e) => {
+      dragging = true; cv.setPointerCapture(e.pointerId);
+      mode = 2; setChip('fa-mode', 2); zt = clampZ(toWorldX(e));
+    });
+    cv.addEventListener('pointermove', (e) => { if (dragging) zt = clampZ(toWorldX(e)); });
+    const endDrag = () => { dragging = false; };
+    cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+
+    bindChips('fa-mode', (v) => { mode = v; if (v === 2) zt = z; else { vz = 0; if (v === 0) { z = -ZMAX; hold = 0.3; } else phase = 0; } });
+    bindChips('fa-dir', (v) => { sg = v; });
+    bindRange('fa-spd', (v) => v.toFixed(1), (v) => { spd = v; });
+    bindRange('fa-n', (v) => v + ' 巻き', (v) => { N = v; });
+    $('fa-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('fa-pause', paused); });
+    $('fa-reset').addEventListener('click', () => { reset(); if (mode === 2) { zt = 0; z = 0; } });
+    setPauseLabel('fa-pause', paused);
+
+    function resize() {
+      const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; scale = W / VIEW;
+      const q = fit(cg); g = q.ctx; GW = q.w; GH = q.h;
+    }
+    function frame(dt) { const r = advance(dt); drawScene(r[0], r[1]); drawGraph(r[0], r[1]); meters(r[0], r[1]); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 5. RLC回路 ---------- */
+  const RL = (function () {
+    const cv = $('cv-rl'), cr = $('cv-rc');
+    const RATE = 4, H = 0.01, W0 = 0.2, W1 = 2.4, KEEP = 220;
+    let c, W = 0, Hh = 0, d, RW = 0, RH = 0;
+    let Rr = 0.3, L = 1, Cc = 1, w = 0.7, paused = RM;
+    let s, clk, hist, acc, cnt;
+
+    function reset() { s = { q: 0, i: 0, t: 0 }; clk = 0; hist = []; acc = 0; cnt = 0; }
+    function w0() { return 1 / Math.sqrt(L * Cc); }
+    function advance(dt) {
+      acc += dt * RATE;
+      let guard = 0;
+      while (acc >= H && guard++ < 800) {
+        rlcStep(s, H, L, Rr, Cc, 1, w);
+        clk += H; acc -= H;
+        if (++cnt % 5 === 0) hist.push([clk, Math.cos(w * s.t), s.i]);
+      }
+      while (hist.length && hist[0][0] < clk - KEEP) hist.shift();
+    }
+    function setW(nw) { const th = w * s.t; w = nw; s.t = th / w; }
+    function measured() {
+      const T = 2 * PI / w;
+      if (clk < 1.5 * T || !hist.length) return null;
+      let m = 0;
+      for (let k = hist.length - 1; k >= 0 && hist[k][0] > clk - T; k--) m = Math.max(m, Math.abs(hist[k][2]));
+      return m;
+    }
+    function drawWave() {
+      c.clearRect(0, 0, W, Hh);
+      c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      const T = 2 * PI / w, span = Math.max(30, 4.5 * T);
+      const x0 = 8, x1 = W - 8, ym = Hh / 2, hh = Hh / 2 - 16;
+      c.strokeStyle = C.grid; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(x0, ym); c.lineTo(x1, ym); c.stroke();
+      const tx = (t) => x1 - (clk - t) / span * (x1 - x0);
+      function trace(idx, k, col) {
+        c.strokeStyle = col; c.lineWidth = 2.2; c.lineJoin = 'round'; c.beginPath();
+        let first = true;
+        for (const h of hist) {
+          if (h[0] < clk - span) continue;
+          const x = tx(h[0]), y = ym - h[idx] * k * hh;
+          if (first) { c.moveTo(x, y); first = false; } else c.lineTo(x, y);
+        }
+        c.stroke();
+      }
+      trace(1, 0.5, C.accent);
+      trace(2, Rr, C.warm);
+      c.font = MONO; c.textBaseline = 'top'; c.textAlign = 'left';
+      c.fillStyle = C['ink-3']; c.fillText('時間 → (右端が現在)', x0 + 2, 6);
+      c.textAlign = 'right'; c.fillText('周期 T = ' + T.toFixed(1), x1 - 2, 6);
+    }
+    function drawCurve() {
+      d.clearRect(0, 0, RW, RH);
+      d.fillStyle = C.stage; d.fillRect(0, 0, RW, RH);
+      const px0 = 42, px1 = RW - 40, py0 = 14, py1 = RH - 34;
+      const X = (v) => px0 + (v - W0) / (W1 - W0) * (px1 - px0);
+      const YA = (a) => py1 - a * (py1 - py0), YP = (p) => (py0 + py1) / 2 - p / (PI / 2) * (py1 - py0) / 2;
+      d.strokeStyle = C.grid; d.lineWidth = 1; d.font = MONO; d.fillStyle = C['ink-3'];
+      d.textAlign = 'right'; d.textBaseline = 'middle';
+      for (const a of [0, 0.5, 1]) { d.beginPath(); d.moveTo(px0, YA(a)); d.lineTo(px1, YA(a)); d.stroke(); d.fillText(a.toString(), px0 - 6, YA(a)); }
+      d.textAlign = 'left';
+      for (const p of [-90, 0, 90]) d.fillText((p > 0 ? '+' : '') + p + '°', px1 + 5, YP(p * PI / 180));
+      d.textAlign = 'center'; d.textBaseline = 'top';
+      for (const v of [0.5, 1, 1.5, 2]) { d.beginPath(); d.moveTo(X(v), py1); d.lineTo(X(v), py1 + 4); d.stroke(); d.fillText(v.toString(), X(v), py1 + 6); }
+      d.fillText('角周波数 ω', (px0 + px1) / 2, py1 + 18);
+      // ω0
+      d.strokeStyle = C['ink-3']; d.setLineDash([4, 4]);
+      d.beginPath(); d.moveTo(X(w0()), py0); d.lineTo(X(w0()), py1); d.stroke(); d.setLineDash([]);
+      d.fillStyle = C['ink-3']; d.textAlign = 'left'; d.textBaseline = 'top'; d.fillText('ω₀', X(w0()) + 3, py0 + 1);
+      // 曲線
+      function curve(fn, col) {
+        d.strokeStyle = col; d.lineWidth = 2.2; d.beginPath();
+        for (let k = 0; k <= 160; k++) { const v = W0 + (W1 - W0) * k / 160, p = fn(v); if (k) d.lineTo(X(v), p); else d.moveTo(X(v), p); }
+        d.stroke();
+      }
+      curve((v) => YA(Rr / rlcZ(L, Rr, Cc, v)), C.accent);
+      curve((v) => YP(rlcPhase(L, Rr, Cc, v)), C.warm);
+      d.fillStyle = C.accent; d.strokeStyle = C.surface; d.lineWidth = 2;
+      d.beginPath(); d.arc(X(w), YA(Rr / rlcZ(L, Rr, Cc, w)), 6, 0, TAU); d.fill(); d.stroke();
+      d.fillStyle = C.warm;
+      d.beginPath(); d.arc(X(w), YP(rlcPhase(L, Rr, Cc, w)), 6, 0, TAU); d.fill(); d.stroke();
+    }
+    function meters() {
+      const Z = rlcZ(L, Rr, Cc, w), ph = rlcPhase(L, Rr, Cc, w) * 180 / PI, m = measured();
+      setText('rl-w0', w0().toFixed(3));
+      setText('rl-Q', (w0() * L / Rr).toFixed(2));
+      setText('rl-Z', Z.toFixed(3));
+      setText('rl-ph', (Math.abs(ph) < 0.5 ? '0°(同位相)' : (ph > 0 ? '+' : '−') + Math.abs(ph).toFixed(0) + '°' + (ph > 0 ? ' 遅れ' : ' 進み')));
+      setText('rl-ia', (1 / Z).toFixed(3));
+      setText('rl-im', m === null ? '計測中' : m.toFixed(3));
+      setText('rl-pw', (0.5 * Rr / (Z * Z)).toFixed(3));
+    }
+
+    bindRange('rl-w', (v) => v.toFixed(2), (v) => setW(v));
+    bindRange('rl-R', (v) => v.toFixed(2), (v) => { Rr = v; });
+    bindRange('rl-L', (v) => v.toFixed(1), (v) => { L = v; });
+    bindRange('rl-C', (v) => v.toFixed(1), (v) => { Cc = v; });
+    $('rl-tune').addEventListener('click', () => setRange('rl-w', Math.max(0.3, Math.min(2.2, Math.round(w0() * 100) / 100))));
+    $('rl-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('rl-pause', paused); });
+    $('rl-reset').addEventListener('click', reset);
+    setPauseLabel('rl-pause', paused);
+
+    function resize() {
+      const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h;
+      const q = fit(cr); d = q.ctx; RW = q.w; RH = q.h;
+    }
+    function frame(dt) { if (!paused) advance(dt); drawWave(); drawCurve(); meters(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 6. アンペールの法則 ---------- */
+  const AM = (function () {
+    const cv = $('cv-am'), cq = $('cv-ac');
+    const BND = { x0: -4, x1: 4, y0: -3, y1: 3 }, RMAX = 4;
+    const PRE = [
+      [{ x: 0.5, y: -0.2, I: 1 }],
+      [{ x: -1.1, y: 0, I: 1 }, { x: 1.1, y: 0, I: 1 }],
+      [{ x: -1.1, y: 0, I: 1 }, { x: 1.1, y: 0, I: -1 }],
+      [{ x: -1.5, y: -0.6, I: 1 }, { x: 1.4, y: -0.5, I: -1 }, { x: 0.1, y: 1.3, I: 2 }]
+    ];
+    let c, W = 0, Hh = 0, scale = 1, d, QW = 0, QH = 0;
+    let Wr = [], cx = 0, cy = 0, rad = 1.2, lines = [], curve = null, dirty = true, drag = null;
+    let showLines = true, showArr = true;
+
+    function toWorld(px, py) { return [(px - W / 2) / scale, -(py - Hh / 2) / scale]; }
+    function sx(x) { return W / 2 + x * scale; }
+    function sy(y) { return Hh / 2 - y * scale; }
+    function load(k) {
+      Wr = PRE[k].map((w) => ({ x: w.x, y: w.y, I: w.I }));
+      cx = 0; cy = 0; rad = k === 0 ? 1.4 : 1.8; setRange('am-r', rad);
+      recompute();
+    }
+    function recompute() {
+      lines = [];
+      const ext = { x0: BND.x0 - 0.2, x1: BND.x1 + 0.2, y0: BND.y0 - 0.2, y1: BND.y1 + 0.2 };
+      for (const w of Wr) {
+        const a = Math.abs(w.I);
+        let k = 0;
+        for (let r = 0.3; r < 3.3 && k < 14; r *= Math.exp(0.46 / a), k++) {
+          const ang = 0.7 + 1.3 * k;
+          lines.push(traceB(Wr, w.x + r * Math.cos(ang), w.y + r * Math.sin(ang), 0.06, 900, ext));
+        }
+      }
+      const rs = [], cs = [], es = [];
+      for (let k = 0; k <= 140; k++) {
+        const r = 0.04 + (RMAX - 0.04) * k / 140;
+        rs.push(r); cs.push(circulation(Wr, cx, cy, r, 360)); es.push(enclosedI(Wr, cx, cy, r));
+      }
+      curve = { r: rs, c: cs, e: es };
+      dirty = true;
+    }
+    function nearestWire(px, py) {
+      let best = -1, bd = 26;
+      Wr.forEach((w, i) => { const dd = Math.hypot(sx(w.x) - px, sy(w.y) - py); if (dd < bd) { bd = dd; best = i; } });
+      return best;
+    }
+    function draw() {
+      c.clearRect(0, 0, W, Hh);
+      c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      if (showLines) {
+        c.strokeStyle = C.accent; c.fillStyle = C.accent; c.lineWidth = 1.5; c.globalAlpha = 0.6; c.lineJoin = 'round';
+        for (const l of lines) {
+          c.beginPath();
+          l.forEach((p, i) => { if (i) c.lineTo(sx(p[0]), sy(p[1])); else c.moveTo(sx(p[0]), sy(p[1])); });
+          c.stroke();
+          const m = Math.min(l.length - 2, Math.floor(l.length * 0.4));
+          if (m > 0) {
+            const a = l[m], b = l[m + 1], ang = Math.atan2(-(b[1] - a[1]), b[0] - a[0]), X = sx(a[0]), Y = sy(a[1]);
+            c.beginPath(); c.moveTo(X + 6 * Math.cos(ang), Y + 6 * Math.sin(ang));
+            c.lineTo(X + 4 * Math.cos(ang + 2.5), Y + 4 * Math.sin(ang + 2.5)); c.lineTo(X + 4 * Math.cos(ang - 2.5), Y + 4 * Math.sin(ang - 2.5)); c.fill();
+          }
+        }
+        c.globalAlpha = 1;
+      }
+      // 積分する円
+      const rp = rad * scale;
+      c.strokeStyle = C.warm; c.lineWidth = 2.6;
+      c.beginPath(); c.arc(sx(cx), sy(cy), rp, 0, TAU); c.stroke();
+      if (showArr) {
+        for (let k = 0; k < 24; k++) {
+          const a = TAU * (k + 0.5) / 24, x = cx + rad * Math.cos(a), y = cy + rad * Math.sin(a);
+          const B = wireB(Wr, x, y), bt = -B[0] * Math.sin(a) + B[1] * Math.cos(a);
+          const len = Math.max(-34, Math.min(34, bt * 120));
+          if (Math.abs(len) < 2.5) continue;
+          const tx = -Math.sin(a), ty = -Math.cos(a);   // 画面上の接線(反時計回り)
+          arrow(c, sx(x), sy(y), sx(x) + tx * len, sy(y) + ty * len, C.green, 2.2);
+        }
+      }
+      c.strokeStyle = C.violet; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(sx(cx) - 6, sy(cy)); c.lineTo(sx(cx) + 6, sy(cy)); c.moveTo(sx(cx), sy(cy) - 6); c.lineTo(sx(cx), sy(cy) + 6); c.stroke();
+      // 導線
+      for (const w of Wr) {
+        const inside = Math.hypot(w.x - cx, w.y - cy) < rad, rr = 8 + 4 * (Math.abs(w.I) - 1);
+        if (inside) { c.strokeStyle = C.warm; c.lineWidth = 2; c.beginPath(); c.arc(sx(w.x), sy(w.y), rr + 5, 0, TAU); c.stroke(); }
+        c.fillStyle = C.surface; c.strokeStyle = C.ink; c.lineWidth = 2;
+        c.beginPath(); c.arc(sx(w.x), sy(w.y), rr, 0, TAU); c.fill(); c.stroke();
+        c.fillStyle = C.ink; c.strokeStyle = C.ink; c.lineWidth = 2;
+        if (w.I > 0) { c.beginPath(); c.arc(sx(w.x), sy(w.y), 2.8, 0, TAU); c.fill(); }
+        else { const q = rr * 0.5; c.beginPath(); c.moveTo(sx(w.x) - q, sy(w.y) - q); c.lineTo(sx(w.x) + q, sy(w.y) + q); c.moveTo(sx(w.x) + q, sy(w.y) - q); c.lineTo(sx(w.x) - q, sy(w.y) + q); c.stroke(); }
+        c.font = MONO; c.fillStyle = C['ink-2']; c.textAlign = 'center'; c.textBaseline = 'top';
+        c.fillText('I=' + (w.I > 0 ? '+' : '−') + Math.abs(w.I), sx(w.x), sy(w.y) + rr + 4);
+      }
+    }
+    function drawGraph() {
+      d.clearRect(0, 0, QW, QH);
+      d.fillStyle = C.stage; d.fillRect(0, 0, QW, QH);
+      const px0 = 40, px1 = QW - 14, py0 = 14, py1 = QH - 34;
+      let lo = 0, hi = 0;
+      for (const v of curve.e) { lo = Math.min(lo, v); hi = Math.max(hi, v); }
+      lo -= 0.6; hi += 0.6;
+      const X = (r) => px0 + r / RMAX * (px1 - px0), Y = (v) => py1 - (v - lo) / (hi - lo) * (py1 - py0);
+      d.strokeStyle = C.grid; d.lineWidth = 1; d.font = MONO; d.fillStyle = C['ink-3']; d.textAlign = 'right'; d.textBaseline = 'middle';
+      for (let v = Math.ceil(lo); v <= hi; v++) { d.beginPath(); d.moveTo(px0, Y(v)); d.lineTo(px1, Y(v)); d.stroke(); d.fillText(v.toString(), px0 - 6, Y(v)); }
+      d.textAlign = 'center'; d.textBaseline = 'top';
+      for (let r = 0; r <= RMAX; r++) { d.beginPath(); d.moveTo(X(r), py1); d.lineTo(X(r), py1 + 4); d.stroke(); d.fillText(r.toString(), X(r), py1 + 6); }
+      d.fillText('円の半径', (px0 + px1) / 2, py1 + 18);
+      function line(arr, col, lw) {
+        d.strokeStyle = col; d.lineWidth = lw; d.beginPath();
+        let pen = false;
+        for (let k = 0; k < arr.length; k++) {
+          const v = arr[k];
+          if (!isFinite(v)) { pen = false; continue; }
+          if (pen) d.lineTo(X(curve.r[k]), Y(v)); else { d.moveTo(X(curve.r[k]), Y(v)); pen = true; }
+        }
+        d.stroke();
+      }
+      line(curve.e, C.warm, 1.6); line(curve.c, C.accent, 2.6);
+      d.strokeStyle = C['ink-3']; d.setLineDash([4, 4]);
+      d.beginPath(); d.moveTo(X(rad), py0); d.lineTo(X(rad), py1); d.stroke(); d.setLineDash([]);
+      const cc = circulation(Wr, cx, cy, rad);
+      if (isFinite(cc)) { d.fillStyle = C.accent; d.strokeStyle = C.surface; d.lineWidth = 2; d.beginPath(); d.arc(X(rad), Y(cc), 6, 0, TAU); d.fill(); d.stroke(); }
+    }
+    function meters() {
+      const cc = circulation(Wr, cx, cy, rad), ie = enclosedI(Wr, cx, cy, rad);
+      let n = 0; for (const w of Wr) if (Math.hypot(w.x - cx, w.y - cy) < rad) n++;
+      setText('am-c', isFinite(cc) ? fmt(cc, 3) : '—');
+      setText('am-i', fmt(ie, 3));
+      setText('am-n', n + ' 本');
+    }
+
+    function evPx(e) { const r = cv.getBoundingClientRect(); return [(e.clientX - r.left) * (W / r.width), (e.clientY - r.top) * (Hh / r.height)]; }
+    function clampW(p) { return [Math.max(BND.x0 + 0.1, Math.min(BND.x1 - 0.1, p[0])), Math.max(BND.y0 + 0.1, Math.min(BND.y1 - 0.1, p[1]))]; }
+    cv.addEventListener('pointerdown', (e) => {
+      const p = evPx(e), i = nearestWire(p[0], p[1]);
+      cv.setPointerCapture(e.pointerId);
+      if (i >= 0) drag = { wire: i };
+      else { drag = { loop: true }; const w = clampW(toWorld(p[0], p[1])); cx = w[0]; cy = w[1]; recompute(); }
+    });
+    cv.addEventListener('pointermove', (e) => {
+      if (!drag) return;
+      const w = clampW(toWorld.apply(null, evPx(e)));
+      if (drag.wire !== undefined) { Wr[drag.wire].x = w[0]; Wr[drag.wire].y = w[1]; } else { cx = w[0]; cy = w[1]; }
+      recompute();
+    });
+    const endDrag = () => { drag = null; };
+    cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
+
+    bindChips('am-preset', (v) => load(v));
+    bindRange('am-r', (v) => v.toFixed(2), (v) => { rad = v; dirty = true; });
+    $('am-lines').addEventListener('change', (e) => { showLines = e.target.checked; dirty = true; });
+    $('am-arr').addEventListener('change', (e) => { showArr = e.target.checked; dirty = true; });
+
+    function resize() {
+      const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; scale = W / 8;
+      const q = fit(cq); d = q.ctx; QW = q.w; QH = q.h; dirty = true;
+    }
+    function frame() { if (dirty) { draw(); drawGraph(); meters(); dirty = false; } }
+    function invalidate() { dirty = true; }
+    load(0);
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
   /* ---------- タブと描画ループ ---------- */
-  const TABS = ['ef', 'cp', 'ew'];
-  const modules = { ef: EF, cp: CP, ew: EW };
+  const TABS = ['ef', 'cp', 'ew', 'fa', 'rl', 'am'];
+  const modules = { ef: EF, cp: CP, ew: EW, fa: FA, rl: RL, am: AM };
   let active = 'ef';
   function show(name, focus) {
     active = name;

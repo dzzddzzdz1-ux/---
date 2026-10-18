@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>量子力学ラボ | SimPhys</title>
-<meta name="description" content="井戸の中の重ね合わせ、トンネル効果、不確定性関係を時間発展させて確かめる、学部量子力学のシミュレーション。">
+<meta name="description" content="井戸の中の重ね合わせ、トンネル効果、不確定性関係、調和振動子、水素原子の軌道、スピンの歳差を動かして確かめる、学部量子力学のシミュレーション。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
@@ -188,13 +188,16 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
   <header class="head">
     <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 量子力学 · 試作</p>
     <h1>量子力学ラボ</h1>
-    <p class="lede">波動関数は、式では追えても絵が浮かびにくいものです。閉じ込められた粒子、トンネル効果、不確定性関係の3つを、時間発展させて確かめます。</p>
+    <p class="lede">波動関数は、式では追えても絵が浮かびにくいものです。閉じ込められた粒子、トンネル効果、不確定性関係、調和振動子、水素原子の軌道、スピンの6つを、動かして確かめます。</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
     <button class="tab" role="tab" id="tab-qw" aria-controls="panel-qw" aria-selected="true" tabindex="0">井戸型</button>
     <button class="tab" role="tab" id="tab-qt" aria-controls="panel-qt" aria-selected="false" tabindex="-1">トンネル効果</button>
     <button class="tab" role="tab" id="tab-qu" aria-controls="panel-qu" aria-selected="false" tabindex="-1">不確定性</button>
+    <button class="tab" role="tab" id="tab-qh" aria-controls="panel-qh" aria-selected="false" tabindex="-1">調和振動子</button>
+    <button class="tab" role="tab" id="tab-qa" aria-controls="panel-qa" aria-selected="false" tabindex="-1">水素原子</button>
+    <button class="tab" role="tab" id="tab-qs" aria-controls="panel-qs" aria-selected="false" tabindex="-1">スピン</button>
   </div>
 
   <!-- 1. 井戸と重ね合わせ -->
@@ -484,6 +487,267 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     </div>
   </section>
 
+  <!-- 4. 調和振動子 -->
+  <section class="panel" id="panel-qh" role="tabpanel" aria-labelledby="tab-qh" hidden>
+    <div class="intro">
+      <h2>等間隔のはしごと、古典の振動子にそっくりな波束</h2>
+      <p>放物線のポテンシャルの中の量子では、エネルギー準位が等間隔に並びます。準位を重ね合わせると、波束が行ったり来たりします。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qh" data-aspect="0.7" role="img" aria-label="放物線のポテンシャルと等間隔のエネルギー準位。選んだ状態の確率密度が、そのエネルギーの高さに描かれる。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>確率密度 |ψ(x)|²</span>
+            <span><i class="dot warm"></i>平均位置 ⟨x⟩</span>
+            <span>灰色の線: エネルギー準位 E = n + ½</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>状態の種類</span></span>
+          <div class="btns" id="qh-mode">
+            <button class="chip" data-v="0" aria-pressed="true">固有状態</button>
+            <button class="chip" data-v="1" aria-pressed="false">2準位の重ね合わせ</button>
+            <button class="chip" data-v="2" aria-pressed="false">コヒーレント状態</button>
+          </div>
+        </div>
+        <div class="field" id="qh-nf">
+          <label for="qh-n"><span id="qh-nlab">量子数 n</span><output id="qh-n-v"></output></label>
+          <input type="range" id="qh-n" min="0" max="7" step="1" value="2">
+        </div>
+        <div class="field" id="qh-af" hidden>
+          <label for="qh-a"><span>はじめのずれ α(古典の振幅に対応)</span><output id="qh-a-v"></output></label>
+          <input type="range" id="qh-a" min="0.5" max="3" step="0.1" value="2">
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="qh-pause">一時停止</button>
+          <button class="btn" id="qh-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">平均エネルギー ⟨E⟩</span><span class="v" id="qh-E">0</span></div>
+          <div class="meter"><span class="k">平均位置 ⟨x⟩</span><span class="v" id="qh-x">0</span></div>
+          <div class="meter"><span class="k">広がりの積 Δx·Δp</span><span class="v" id="qh-dd">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>固有状態は、どの n でも時間がたっても形が変わりません。n が大きいほど、節(密度がゼロの点)が増え、古典的な往復運動の端の近くに山ができます。</li>
+        <li>準位の間隔はどこも ħω で等しく、いちばん下の n = 0 でも E = ½ ħω のエネルギーが残ります(零点エネルギー)。</li>
+        <li>隣り合う2つの準位を重ね合わせると、密度の山が周期 2π/ω で左右に揺れます。揺れの周期は、エネルギー差から決まります。</li>
+        <li>コヒーレント状態は、n = 0 と同じ形のガウス波束が、形を保ったまま古典の振動子と同じ運動をする状態です。Δx·Δp は最小値の ½ で、広がりません。</li>
+        <li>自由粒子の波束は広がっていきましたが、放物線の井戸の中では、復元力のおかげで広がりません。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>E<sub>n</sub></i> = (<i>n</i> + ½) ħ<i>ω</i></span>
+        <span class="ln">|<i>α</i>⟩ = <i>e</i><sup>−|<i>α</i>|²/2</sup> Σ (<i>α<sup>n</sup></i>/√<i>n</i>!) |<i>n</i>⟩</span>
+      </div>
+      <p class="foot">ħ = m = ω = 1 の単位です。波動関数は、エルミート多項式の漸化式で作った固有関数を足し合わせて、毎フレーム計算しています。</p>
+    </div>
+  
+    <div class="more" data-more="qh">
+      <h3>もう少し詳しく</h3>
+      <p>放物線のポテンシャル V = ½ m ω² x² の中の粒子は、エネルギーが E = (n + ½) ħω という等間隔の値だけをとります。隣り合う準位の間隔がどこでも ħω で等しいのが、この系の特徴です。いちばん下の n = 0 でも ½ ħω が残るのは、位置を井戸の底に絞るほど運動量がばらつく、という不確定性関係の結果です(零点エネルギー)。</p>
+      <p>固有状態の確率密度は、時間がたっても変わりません。しかし、エネルギーの異なる固有状態を重ね合わせると、各成分が e^{−iEt/ħ} で位相をずらしながら回るので、密度が動き出します。隣り合う2つの準位なら、動きの周期は 2π/ω です。</p>
+      <p>コヒーレント状態は、固有状態をポアソン分布の重みで重ね合わせた状態です。波束の形が変わらず、中心が古典の振動子と同じ x = x₀ cos ωt で動きます。レーザー光の量子的な状態としても、よく使われます。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「固有状態」で n を 0 から 7 まで動かして、節の数が n 個であることを確かめます。</li>
+        <li>「2準位の重ね合わせ」で n = 0 にして、山が左右に揺れる様子を見ます。n を増やしても、揺れの周期が変わらないことを確かめます。</li>
+        <li>「コヒーレント状態」で α を大きくして、振幅は変わっても形が変わらないことを確かめます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>n = 0 でもエネルギーがゼロでないのはなぜですか。</dt>
+        <dd>粒子を井戸の底の一点に止めると、位置の幅がゼロになり、不確定性関係から運動量が無限にばらつくからです。位置と運動量の広がりのバランスで、最小のエネルギー ½ ħω が決まります。</dd>
+        <dt>波束が広がらないのは、自由粒子と何が違うのですか。</dt>
+        <dd>自由粒子は、運動量の成分ごとに速さが違うので広がります。調和振動子では、すべての成分が同じ周期で往復するので、周期ごとに元の形に戻ります。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 5. 水素原子 -->
+  <section class="panel" id="panel-qa" role="tabpanel" aria-labelledby="tab-qa" hidden>
+    <div class="intro">
+      <h2>電子の雲は、量子数ごとにまったく違う形をしている</h2>
+      <p>水素原子の電子が見つかりやすい場所を、原子核を通る断面で見ます。量子数 n、l、m を変えて、s、p、d の軌道の形を確かめてください。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qa" data-aspect="0.9" role="img" aria-label="水素原子の電子の確率密度を、原子核を通る断面で表した図。濃いほど電子が見つかりやすい。"></canvas></div>
+          <figcaption>
+            <span>濃いほど電子が見つかりやすい(見やすいように明るさを補正)</span>
+            <span>縦軸が z、横軸が x、中心が原子核</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qr" data-aspect="0.45" role="img" aria-label="原子核からの距離 r の関数としての、電子が見つかる確率の分布。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>距離 r に電子が見つかる確率 r²R(r)²</span>
+            <span><i class="dot warm"></i>平均の距離 ⟨r⟩</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="qa-n"><span>主量子数 n</span><output id="qa-n-v"></output></label>
+          <input type="range" id="qa-n" min="1" max="4" step="1" value="2">
+        </div>
+        <div class="field">
+          <label for="qa-l"><span>方位量子数 l</span><output id="qa-l-v"></output></label>
+          <input type="range" id="qa-l" min="0" max="1" step="1" value="1">
+        </div>
+        <div class="field">
+          <label for="qa-m"><span>磁気量子数 |m|</span><output id="qa-m-v"></output></label>
+          <input type="range" id="qa-m" min="0" max="1" step="1" value="0">
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">軌道</span><span class="v" id="qa-name">—</span></div>
+          <div class="meter"><span class="k">エネルギー</span><span class="v" id="qa-E">—</span></div>
+          <div class="meter"><span class="k">平均の距離 ⟨r⟩</span><span class="v" id="qa-r">—</span></div>
+          <div class="meter"><span class="k">節の数(球面 / 平面)</span><span class="v" id="qa-nd">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>1s は、中心がいちばん濃い球対称の雲です。ただし、電子が「核からちょうど r のところ」に見つかる確率は、体積が r² で増えるぶん、r = 1(ボーア半径)でいちばん大きくなります。下のグラフの山がそれです。</li>
+        <li>l = 1(p 軌道)は、中心で密度がゼロの、2つの葉をもつ形です。m を 0 から 1 に変えると、葉の向きが z 軸の方向から x 軸の方向へ変わります。</li>
+        <li>n を大きくすると、雲は n² に比例して広がり、動径方向に n − l − 1 個の節(球面状の密度ゼロの殻)ができます。2s の中のくぼみがその一例です。</li>
+        <li>水素原子のエネルギーは n だけで決まります。同じ n で l や m が違う軌道は、同じエネルギーをもちます(縮退)。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>E<sub>n</sub></i> = −13.6 eV / <i>n</i>²</span>
+        <span class="ln"><i>ψ<sub>nlm</sub></i>(<i>r</i>, <i>θ</i>, <i>φ</i>) = <i>R<sub>nl</sub></i>(<i>r</i>) <i>Y<sub>lm</sub></i>(<i>θ</i>, <i>φ</i>)</span>
+      </div>
+      <p class="foot">実数で表した軌道(m ≠ 0 は cos mφ 型)の、x–z 断面です。原子単位で、距離の単位はボーア半径(約 0.053 nm)です。</p>
+    </div>
+  
+    <div class="more" data-more="qa">
+      <h3>もう少し詳しく</h3>
+      <p>水素原子の電子の状態は、3つの量子数 n、l、m で決まります。エネルギーは n だけで決まり、E = −13.6 eV / n² です。l(0, 1, 2, … = s, p, d, …)は軌道の形、m はその向きを表します。l は n − 1 以下、|m| は l 以下の整数に限られます。</p>
+      <p>波動関数は、動径方向の関数 R(r) と、角度方向の関数(球面調和関数)の積です。図に描いたのは、電子の見つかる確率密度 |ψ|² の断面です。s 軌道(l = 0)は球対称で、p 軌道(l = 1)は2つの葉、d 軌道(l = 2)は4つの葉(またはリングつきの2つの葉)をもちます。</p>
+      <p>節(密度がゼロの面)の総数は n − 1 個で、そのうち l 個は角度方向の平面(または円錐面)、残りの n − l − 1 個は動径方向の球面です。化学で習う軌道の形や、原子の周期表の並び方の背景に、この量子数の制限があります。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>n = 1、l = 0 から始めて、n を増やします。動径方向の節が増えていく様子を、下のグラフで確かめます。</li>
+        <li>n = 2 で l = 1 にして、m を 0 と 1 で切り替えます。葉の向きが変わります。</li>
+        <li>n = 3 で l を 0、1、2 と増やして、節の位置と数がどう変わるか見比べます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>電子は、核のまわりを回っているのではないのですか。</dt>
+        <dd>図の濃淡は、電子を見つけたときの位置の確率分布です。軌道運動のような軌跡ではありません。電子の状態は、定常的な雲のように広がっています。</dd>
+        <dt>m ≠ 0 の図が、教科書で見る複素数の球面調和関数と違って見えるのはなぜですか。</dt>
+        <dd>ここでは、m と −m を足し引きして作った実数の軌道(cos mφ 型)を描いています。化学の教科書の px、dxz などの形に対応します。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 6. スピン -->
+  <section class="panel" id="panel-qs" role="tabpanel" aria-labelledby="tab-qs" hidden>
+    <div class="intro">
+      <h2>スピンは磁場のまわりを回り、測ると上か下かに決まる</h2>
+      <p>スピン 1/2 の状態は、球の上の矢印(ブロッホベクトル)で表せます。磁場をかけると、矢印は磁場の向きのまわりを一定の速さで回ります。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qs" data-aspect="0.85" role="img" aria-label="ブロッホ球。橙の矢印がスピンの向き、緑の矢印が磁場の向きで、スピンは磁場のまわりを回る。"></canvas></div>
+          <figcaption>
+            <span><i class="dot warm"></i>スピンの向き</span>
+            <span><i class="dot green"></i>磁場の向き B</span>
+            <span><i class="dot accent"></i>矢印の先の軌跡</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qp" data-aspect="0.45" role="img" aria-label="スピンの x、y、z 成分の期待値の時間変化。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>⟨σ<sub>z</sub>⟩</span>
+            <span><i class="dot warm"></i>⟨σ<sub>x</sub>⟩</span>
+            <span><i class="dot violet"></i>⟨σ<sub>y</sub>⟩</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>はじめの向き</span></span>
+          <div class="btns" id="qs-init">
+            <button class="chip" data-v="0" aria-pressed="true">+z(上向き)</button>
+            <button class="chip" data-v="1" aria-pressed="false">+x</button>
+            <button class="chip" data-v="2" aria-pressed="false">+y</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="qs-b"><span>磁場の向き(z軸からの角度)</span><output id="qs-b-v"></output></label>
+          <input type="range" id="qs-b" min="0" max="180" step="5" value="60">
+        </div>
+        <div class="field">
+          <label for="qs-w"><span>磁場の強さ(回る速さ ω)</span><output id="qs-w-v"></output></label>
+          <input type="range" id="qs-w" min="0.5" max="3" step="0.1" value="1.5">
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="qs-pause">一時停止</button>
+          <button class="btn" id="qs-meas">z軸で測定する</button>
+          <button class="btn" id="qs-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">測ると上向きになる確率</span><span class="v" id="qs-pu">0</span></div>
+          <div class="meter"><span class="k">回る周期 2π/ω</span><span class="v" id="qs-T">0</span></div>
+          <div class="meter"><span class="k">直近の測定結果</span><span class="v" id="qs-last">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>はじめが +z で、磁場も z 軸に平行なら、スピンは動きません。磁場を z 軸から傾けると、スピンは磁場のまわりに円錐を描いて回り(歳差運動)、上向きの確率が周期的に変わります。</li>
+        <li>磁場を z 軸に垂直(90°)にすると、上向きの確率が 1 から 0 まで往復します。これがラビ振動で、核磁気共鳴(NMR、MRI の原理)の基礎です。</li>
+        <li>磁場と同じ向き(または逆向き)のスピンは、回転軸の上にあるので動きません。「+x」から始めて磁場を 0° にすると、回転のようすがいちばんよくわかります。</li>
+        <li>「z 軸で測定する」を押すと、確率 (1 + ⟨σ<sub>z</sub>⟩)/2 で上か下かに決まり、矢印は +z か −z に飛びます。測定の前の向きの情報は、確率の形でしか残りません。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>H</i> = (ħ<i>ω</i>/2) <b>B</b>̂ · <b>σ</b>,　d⟨<b>σ</b>⟩/d<i>t</i> = <i>ω</i> <b>B</b>̂ × ⟨<b>σ</b>⟩</span>
+        <span class="ln"><i>P</i><sub>↑</sub>(<i>t</i>) = 1 − sin²<i>β</i> sin²(<i>ωt</i>/2)(はじめが +z のとき)</span>
+      </div>
+      <p class="foot">磁場は x–z 面の中で傾けています。状態は2成分の複素数の組で、時間発展を厳密に計算しています。</p>
+    </div>
+  
+    <div class="more" data-more="qs">
+      <h3>もう少し詳しく</h3>
+      <p>電子のスピンは、測ると「上」か「下」の2通りの値だけが得られる量です。測る前の状態は、2つの複素数(上と下の重ね合わせの係数)で決まり、球面上の1点(ブロッホ球)に対応させて矢印で表せます。</p>
+      <p>スピンを磁場の中に置くと、エネルギーが磁場との向きで変わります。その結果、矢印は磁場の向きのまわりを一定の角速度で回ります(ラーモア歳差運動)。回る速さは磁場の強さに比例します。上向きの確率が時間とともに変わる様子は、ラビ振動と呼ばれます。</p>
+      <p>測定すると、確率 (1 + ⟨σz⟩)/2 で上向き、残りの確率で下向きが得られ、状態はその向きに飛びます。1回の測定結果はランダムですが、同じ状態をたくさん用意して測ると、確率の予言どおりの割合になります。MRI は、この歳差運動の周波数を使っています。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>はじめの向きを +z、磁場を 90° にして、上向きの確率が 1 から 0 へ往復するのを見ます。</li>
+        <li>磁場を 0°(z 軸に平行)にして、+x から始めます。矢印が赤道を回ります。</li>
+        <li>「z軸で測定する」を何度か押して、結果がばらつくことと、その割合が表示された確率に近づくことを確かめます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>スピンが「回っている」のは、電子が自転しているのですか。</dt>
+        <dd>古典的な自転とは違います。スピンは、電子がもともともっている内部の量で、磁場の中での振る舞いが、回転する小さな磁石に似ているだけです。</dd>
+        <dt>測定した後、矢印が +z か −z に飛ぶのはなぜですか。</dt>
+        <dd>測定で上向きという結果が得られたら、その後で続けて測っても、同じ結果が得られる必要があります。そのため、状態は測定した結果に対応する状態に変わります(波束の収縮)。</dd>
+      </dl>
+    </div>
+  </section>
+
   <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
   <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
 </div>
@@ -716,6 +980,92 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
   function gaussDensity(sig, t, x) {
     const s = gaussSigma(sig, t);
     return Math.exp(-x * x / (2 * s * s)) / (s * Math.sqrt(2 * Math.PI));
+  }
+
+  // ---- 調和振動子(ħ = m = ω = 1)。φ_n は漸化式で作る。E_n = n + 1/2 ----
+  function hoPhi(n, x) {
+    let a = Math.pow(Math.PI, -0.25) * Math.exp(-x * x / 2);
+    if (n === 0) return a;
+    let b = Math.SQRT2 * x * a;
+    for (let k = 1; k < n; k++) { const c = Math.sqrt(2 / (k + 1)) * x * b - Math.sqrt(k / (k + 1)) * a; a = b; b = c; }
+    return b;
+  }
+  // 状態 = 係数 c_n(実数)。時刻 t の波動関数 [Re, Im]
+  function hoPsi(c, x, t) {
+    let re = 0, im = 0;
+    for (let n = 0; n < c.length; n++) {
+      if (c[n] === 0) continue;
+      const ph = -(n + 0.5) * t, a = c[n] * hoPhi(n, x);
+      re += a * Math.cos(ph); im += a * Math.sin(ph);
+    }
+    return [re, im];
+  }
+  // 昇降演算子の期待値から ⟨x⟩, ⟨p⟩, ⟨x²⟩, ⟨p²⟩ を求める
+  function hoExpect(c, t) {
+    const M = c.length, dr = [], di = [];
+    for (let n = 0; n < M; n++) { const ph = -(n + 0.5) * t; dr.push(c[n] * Math.cos(ph)); di.push(c[n] * Math.sin(ph)); }
+    let ar = 0, ai = 0, a2r = 0, nn = 0;
+    for (let n = 0; n < M; n++) {
+      nn += n * (dr[n] * dr[n] + di[n] * di[n]);
+      if (n + 1 < M) { const f = Math.sqrt(n + 1); ar += f * (dr[n] * dr[n + 1] + di[n] * di[n + 1]); ai += f * (dr[n] * di[n + 1] - di[n] * dr[n + 1]); }
+      if (n + 2 < M) { a2r += Math.sqrt((n + 1) * (n + 2)) * (dr[n] * dr[n + 2] + di[n] * di[n + 2]); }
+    }
+    return { x: Math.SQRT2 * ar, p: Math.SQRT2 * ai, x2: a2r + nn + 0.5, p2: -a2r + nn + 0.5, E: nn + 0.5 };
+  }
+  function hoCoherent(alpha, M) {
+    const c = []; let a = Math.exp(-alpha * alpha / 2);
+    for (let n = 0; n < M; n++) { c.push(a); a *= alpha / Math.sqrt(n + 1); }
+    return c;
+  }
+
+  // ---- 水素原子(原子単位、ボーア半径 = 1)。実数軌道の断面を作る ----
+  function lagGen(k, al, x) {
+    if (k === 0) return 1;
+    let a = 1, b = 1 + al - x;
+    for (let j = 1; j < k; j++) { const c = ((2 * j + 1 + al - x) * b - (j + al) * a) / (j + 1); a = b; b = c; }
+    return b;
+  }
+  function fact(n) { let f = 1; for (let i = 2; i <= n; i++) f *= i; return f; }
+  function hydR(n, l, r) {
+    const rho = 2 * r / n, nm = Math.sqrt(Math.pow(2 / n, 3) * fact(n - l - 1) / (2 * n * fact(n + l)));
+    return nm * Math.exp(-rho / 2) * Math.pow(rho, l) * lagGen(n - l - 1, 2 * l + 1, rho);
+  }
+  function legP(l, m, x) {
+    let pmm = 1;
+    if (m > 0) { const sx = Math.sqrt(Math.max(0, 1 - x * x)); let f = 1; for (let i = 1; i <= m; i++) { pmm *= f * sx; f += 2; } }
+    if (l === m) return pmm;
+    let pm1 = x * (2 * m + 1) * pmm;
+    if (l === m + 1) return pm1;
+    let pl = 0;
+    for (let ll = m + 2; ll <= l; ll++) { pl = ((2 * ll - 1) * x * pm1 - (ll + m - 1) * pmm) / (ll - m); pmm = pm1; pm1 = pl; }
+    return pl;
+  }
+  // 実数軌道(m > 0 は cos mφ 型)の角度部分の 2 乗。φ に依存する cos² mφ は含まない
+  function hydAng2(l, m, ct) {
+    const P = legP(l, m, ct), N2 = (2 * l + 1) / (4 * Math.PI) * fact(l - m) / fact(l + m) * (m > 0 ? 2 : 1);
+    return N2 * P * P;
+  }
+  function hydDensity(n, l, m, r, ct) { const R = hydR(n, l, r); return R * R * hydAng2(l, m, ct); }
+
+  // ---- スピン 1/2。磁場の向き B(単位ベクトル)のまわりに角速度 w で、ブロッホベクトルが回る ----
+  function spinRotate(v, B, w, t) {
+    const th = w * t, c = Math.cos(th), s = Math.sin(th), d = v[0] * B[0] + v[1] * B[1] + v[2] * B[2];
+    const cr = [B[1] * v[2] - B[2] * v[1], B[2] * v[0] - B[0] * v[2], B[0] * v[1] - B[1] * v[0]];
+    return [v[0] * c + cr[0] * s + B[0] * d * (1 - c), v[1] * c + cr[1] * s + B[1] * d * (1 - c), v[2] * c + cr[2] * s + B[2] * d * (1 - c)];
+  }
+  // 2 成分の状態 [a_re, a_im, b_re, b_im] を exp(−i (w/2) B·σ t) で進める
+  function spinorEvolve(sp, B, w, t) {
+    const c = Math.cos(w * t / 2), s = Math.sin(w * t / 2), bx = B[0], by = B[1], bz = B[2];
+    const ar = sp[0], ai = sp[1], br = sp[2], bi = sp[3];
+    // (B·σ) ψ = [bz a + (bx − i by) b, (bx + i by) a − bz b]
+    const pr = bz * ar + bx * br + by * bi, pi = bz * ai + bx * bi - by * br;
+    const qr = bx * ar - by * ai - bz * br, qi = bx * ai + by * ar - bz * bi;
+    // ψ' = c ψ − i s (B·σ ψ)
+    return [c * ar + s * pi, c * ai - s * pr, c * br + s * qi, c * bi - s * qr];
+  }
+  function spinBloch(sp) {
+    const ar = sp[0], ai = sp[1], br = sp[2], bi = sp[3];
+    return [2 * (ar * br + ai * bi), 2 * (ar * bi - ai * br), ar * ar + ai * ai - br * br - bi * bi];
   }
   /* PHYSICS-END */
 
@@ -953,7 +1303,254 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     return { frame: frame, resize: resize, invalidate: invalidate };
   })();
 
-  startApp(['qw', 'qt', 'qu'], { qw: QW, qt: QT, qu: QU });
+  /* ---------- 4. 調和振動子 ---------- */
+  const QH = (function () {
+    const cv = $('cv-qh');
+    const XM = 5.2, EM = 10, NP = 220, RATE = 1.5, DSC = 2.2;
+    let c, W = 0, Hh = 0;
+    let mode = 0, n = 2, al = 2, t = 0, paused = RM, coef = [], tab = [], dens = new Float64Array(NP);
+    const xs = []; for (let i = 0; i < NP; i++) xs.push(-XM + 2 * XM * i / (NP - 1));
+
+    function build() {
+      if (mode === 0) { coef = new Array(n + 1).fill(0); coef[n] = 1; }
+      else if (mode === 1) { coef = new Array(n + 2).fill(0); coef[n] = coef[n + 1] = Math.SQRT1_2; }
+      else coef = hoCoherent(al, 50);
+      tab = xs.map((x) => coef.map((_, k) => hoPhi(k, x)));
+    }
+    function compute() {
+      const cs = [], sn = [];
+      for (let k = 0; k < coef.length; k++) { cs.push(coef[k] * Math.cos(-(k + 0.5) * t)); sn.push(coef[k] * Math.sin(-(k + 0.5) * t)); }
+      for (let i = 0; i < NP; i++) {
+        let re = 0, im = 0; const row = tab[i];
+        for (let k = 0; k < cs.length; k++) { if (cs[k] !== 0 || sn[k] !== 0) { re += cs[k] * row[k]; im += sn[k] * row[k]; } }
+        dens[i] = re * re + im * im;
+      }
+    }
+    function draw() {
+      const px0 = 34, px1 = W - 10, py0 = 10, py1 = Hh - 24;
+      const X = (x) => px0 + (x + XM) / (2 * XM) * (px1 - px0), Y = (e) => py1 - e / EM * (py1 - py0);
+      c.clearRect(0, 0, W, Hh); c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      // 準位
+      c.font = MONO; c.textBaseline = 'middle'; c.textAlign = 'right';
+      for (let k = 0; k < EM; k++) {
+        c.strokeStyle = C.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(px0, Y(k + 0.5)); c.lineTo(px1, Y(k + 0.5)); c.stroke();
+        c.fillStyle = C['ink-3']; c.fillText(k < 8 ? 'n=' + k : '', px0 - 4, Y(k + 0.5));
+      }
+      // ポテンシャル
+      c.strokeStyle = C['ink-2']; c.lineWidth = 2; c.beginPath();
+      let first = true;
+      for (let i = 0; i < NP; i++) { const e = xs[i] * xs[i] / 2; if (e > EM) continue; if (first) { c.moveTo(X(xs[i]), Y(e)); first = false; } else c.lineTo(X(xs[i]), Y(e)); }
+      c.stroke();
+      // 確率密度
+      const ex = hoExpect(coef, t), base = ex.E;
+      c.fillStyle = C.accent; c.globalAlpha = 0.35; c.beginPath(); c.moveTo(X(xs[0]), Y(base));
+      for (let i = 0; i < NP; i++) c.lineTo(X(xs[i]), Y(base + DSC * dens[i]));
+      c.lineTo(X(xs[NP - 1]), Y(base)); c.closePath(); c.fill(); c.globalAlpha = 1;
+      c.strokeStyle = C.accent; c.lineWidth = 2.2; c.beginPath();
+      for (let i = 0; i < NP; i++) { const xx = X(xs[i]), yy = Y(base + DSC * dens[i]); if (i) c.lineTo(xx, yy); else c.moveTo(xx, yy); }
+      c.stroke();
+      // 平均位置
+      c.strokeStyle = C.warm; c.setLineDash([4, 3]); c.lineWidth = 1.6; c.beginPath(); c.moveTo(X(ex.x), Y(0)); c.lineTo(X(ex.x), Y(EM)); c.stroke(); c.setLineDash([]);
+      c.fillStyle = C.warm; c.strokeStyle = C.surface; c.lineWidth = 2; c.beginPath(); c.arc(X(ex.x), Y(base), 6, 0, TAU); c.fill(); c.stroke();
+      drawAxisX(c, px0, px1, -XM, XM, py1, 1, 0);
+      c.fillStyle = C['ink-3']; c.textAlign = 'right'; c.textBaseline = 'bottom'; c.fillText('位置 x →', px1, py1 - 6);
+    }
+    function meters() {
+      const e = hoExpect(coef, t);
+      setText('qh-E', e.E.toFixed(2));
+      setText('qh-x', fmt(e.x, 2));
+      setText('qh-dd', Math.sqrt(Math.max(0, (e.x2 - e.x * e.x) * (e.p2 - e.p * e.p))).toFixed(2));
+    }
+    function sync() {
+      $('qh-nf').style.display = mode === 2 ? 'none' : '';
+      $('qh-af').style.display = mode === 2 ? '' : 'none';
+      $('qh-nlab').textContent = mode === 1 ? '下の準位の量子数 n(n と n+1 を重ねる)' : '量子数 n';
+    }
+    bindChips('qh-mode', (v) => { mode = v; sync(); t = 0; build(); });
+    bindRange('qh-n', (v) => v.toString(), (v) => { n = v; build(); });
+    bindRange('qh-a', (v) => v.toFixed(1), (v) => { al = v; build(); });
+    $('qh-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('qh-pause', paused); });
+    $('qh-reset').addEventListener('click', () => { t = 0; });
+    setPauseLabel('qh-pause', paused);
+    function resize() { const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; }
+    function frame(dt) { if (!paused) t += dt * RATE; compute(); draw(); meters(); }
+    function invalidate() {}
+    sync(); build();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 5. 水素原子 ---------- */
+  const QA = (function () {
+    const cv = $('cv-qa'), cq = $('cv-qr');
+    const G = 150;
+    const SUF = [[''], ['z', 'x'], ['z²', 'xz', 'x²−y²'], ['z³', 'xz²', 'z(x²−y²)', 'x(x²−3y²)']];
+    let c, W = 0, Hh = 0, d, QW = 0, QH_ = 0;
+    let n = 2, l = 1, m = 0, dirty = true, grid = new Float32Array(G * G), gmax = 1, off = document.createElement('canvas'), offCtx;
+    off.width = G; off.height = G; offCtx = off.getContext('2d');
+    function rmax() { return 2.8 * n * n + 3; }
+    function compute() {
+      const R = rmax(); gmax = 0;
+      for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+        const x = -R + 2 * R * (i + 0.5) / G, z = R - 2 * R * (j + 0.5) / G, r = Math.hypot(x, z) || 1e-9;
+        const v = hydDensity(n, l, m, r, z / r);
+        grid[j * G + i] = v; if (v > gmax) gmax = v;
+      }
+    }
+    function paint() {
+      const a = rgb(C.stage), b = rgb(C.accent), img = offCtx.createImageData(G, G);
+      for (let k = 0; k < G * G; k++) {
+        const v = Math.pow(grid[k] / gmax, 0.42);
+        img.data[4 * k] = a[0] + (b[0] - a[0]) * v; img.data[4 * k + 1] = a[1] + (b[1] - a[1]) * v; img.data[4 * k + 2] = a[2] + (b[2] - a[2]) * v; img.data[4 * k + 3] = 255;
+      }
+      offCtx.putImageData(img, 0, 0);
+    }
+    function draw() {
+      compute(); paint();
+      c.clearRect(0, 0, W, Hh); c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      const side = Hh, ox = (W - side) / 2, R = rmax();
+      c.imageSmoothingEnabled = true; c.drawImage(off, ox, 0, side, side);
+      c.strokeStyle = C['ink-3']; c.globalAlpha = 0.5; c.lineWidth = 1;
+      c.beginPath(); c.moveTo(ox, side / 2); c.lineTo(ox + side, side / 2); c.moveTo(W / 2, 0); c.lineTo(W / 2, side); c.stroke(); c.globalAlpha = 1;
+      c.fillStyle = C.warm; c.strokeStyle = C.surface; c.lineWidth = 1.5; c.beginPath(); c.arc(W / 2, side / 2, 3.5, 0, TAU); c.fill(); c.stroke();
+      const L = niceStep(R / 3), pxL = L / (2 * R) * side;
+      c.strokeStyle = C.ink; c.lineWidth = 2; c.beginPath(); c.moveTo(ox + 12, side - 14); c.lineTo(ox + 12 + pxL, side - 14); c.stroke();
+      c.fillStyle = C.ink; c.font = MONO; c.textAlign = 'left'; c.textBaseline = 'bottom'; c.fillText(L + ' a₀', ox + 12, side - 18);
+      c.textAlign = 'right'; c.textBaseline = 'top'; c.fillText('x →', ox + side - 8, side / 2 + 6);
+      c.textAlign = 'left'; c.fillText('↑ z', W / 2 + 6, 8);
+      // 動径分布
+      const px0 = 16, px1 = QW - 16, py0 = 14, py1 = QH_ - 34;
+      d.clearRect(0, 0, QW, QH_); d.fillStyle = C.stage; d.fillRect(0, 0, QW, QH_);
+      const K = 300, ys = []; let ym = 0;
+      for (let k = 0; k <= K; k++) { const r = R * k / K, v = r * r * hydR(n, l, r) ** 2; ys.push(v); if (v > ym) ym = v; }
+      const X = (r) => px0 + r / R * (px1 - px0), Y = (v) => py1 - v / (ym * 1.1) * (py1 - py0);
+      d.fillStyle = C.accent; d.globalAlpha = 0.3; d.beginPath(); d.moveTo(X(0), Y(0));
+      for (let k = 0; k <= K; k++) d.lineTo(X(R * k / K), Y(ys[k]));
+      d.lineTo(X(R), Y(0)); d.closePath(); d.fill(); d.globalAlpha = 1;
+      d.strokeStyle = C.accent; d.lineWidth = 2.2; d.beginPath();
+      for (let k = 0; k <= K; k++) { if (k) d.lineTo(X(R * k / K), Y(ys[k])); else d.moveTo(X(0), Y(ys[0])); }
+      d.stroke();
+      const mr = (3 * n * n - l * (l + 1)) / 2;
+      d.strokeStyle = C.warm; d.lineWidth = 1.8; d.setLineDash([4, 3]); d.beginPath(); d.moveTo(X(mr), py0); d.lineTo(X(mr), py1); d.stroke(); d.setLineDash([]);
+      const st = niceStep(R / 5);
+      drawAxisX(d, px0, px1, 0, R, py1, st, st < 1 ? 1 : 0);
+      d.fillStyle = C['ink-3']; d.font = MONO; d.textAlign = 'right'; d.textBaseline = 'top'; d.fillText('距離 r (a₀)', px1, py1 + 20);
+    }
+    function meters() {
+      const sf = SUF[l][m];
+      setText('qa-name', n + 'spdf'[l] + (sf ? '(' + sf + ')' : ''));
+      setText('qa-E', (-13.606 / (n * n)).toFixed(2) + ' eV');
+      setText('qa-r', ((3 * n * n - l * (l + 1)) / 2).toFixed(1) + ' a₀');
+      setText('qa-nd', (n - l - 1) + ' / ' + l);
+    }
+    function limits() {
+      const le = $('qa-l'), me = $('qa-m');
+      le.max = n - 1; if (l > n - 1) setRange('qa-l', n - 1);
+      me.max = l; if (m > l) setRange('qa-m', l);
+    }
+    bindRange('qa-n', (v) => v.toString(), (v) => { n = v; limits(); dirty = true; });
+    bindRange('qa-l', (v) => v + '(' + 'spdf'[v] + ')', (v) => { l = v; limits(); dirty = true; });
+    bindRange('qa-m', (v) => v.toString(), (v) => { m = v; dirty = true; });
+    $('qa-l').max = n - 1; $('qa-m').max = l;
+    function resize() { const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; const q = fit(cq); d = q.ctx; QW = q.w; QH_ = q.h; dirty = true; }
+    function frame() { if (dirty) { dirty = false; draw(); meters(); } }
+    function invalidate() { dirty = true; }
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 6. スピン ---------- */
+  const QS = (function () {
+    const cv = $('cv-qs'), cp = $('cv-qp');
+    const INITS = [[0, 0, 1], [1, 0, 0], [0, 1, 0]], AZ = 0.6, EL = 0.38, WIN = 14, RATE = 1;
+    let c, W = 0, Hh = 0, g, GW = 0, GH = 0;
+    let init = 0, beta = 60, w = 1.5, paused = RM, v, t, hist, trail, last = '—';
+    function Bvec() { const b = beta * PI / 180; return [Math.sin(b), 0, Math.cos(b)]; }
+    function reset() { v = INITS[init].slice(); t = 0; hist = []; trail = []; last = '—'; }
+    function proj(p, R, cx, cy) {
+      const xr = p[0] * Math.cos(AZ) - p[1] * Math.sin(AZ), yr = p[0] * Math.sin(AZ) + p[1] * Math.cos(AZ);
+      return [cx + xr * R, cy - (p[2] * Math.cos(EL) + yr * Math.sin(EL)) * R, yr * Math.cos(EL) - p[2] * Math.sin(EL)];
+    }
+    function drawSphere() {
+      c.clearRect(0, 0, W, Hh); c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      const R = Math.min(W, Hh) * 0.36, cx = W / 2, cy = Hh / 2;
+      c.strokeStyle = C['ink-3']; c.lineWidth = 1.2; c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.stroke();
+      function ring(f, col) {
+        for (const back of [true, false]) {
+          c.strokeStyle = col; c.globalAlpha = back ? 0.28 : 0.7; c.lineWidth = 1; c.beginPath(); let pen = false;
+          for (let k = 0; k <= 72; k++) {
+            const a = TAU * k / 72, p = proj(f(a), R, cx, cy);
+            if ((p[2] > 0) === back) { if (pen) c.lineTo(p[0], p[1]); else { c.moveTo(p[0], p[1]); pen = true; } } else pen = false;
+          }
+          c.stroke();
+        }
+        c.globalAlpha = 1;
+      }
+      ring((a) => [Math.cos(a), Math.sin(a), 0], C['ink-3']);
+      ring((a) => [Math.cos(a), 0, Math.sin(a)], C['ink-3']);
+      ring((a) => [0, Math.cos(a), Math.sin(a)], C['ink-3']);
+      c.font = MONO; c.fillStyle = C['ink-2']; c.textAlign = 'center'; c.textBaseline = 'middle'; c.strokeStyle = C['ink-3'];
+      for (const [p, lab] of [[[1.22, 0, 0], 'x'], [[0, 1.22, 0], 'y'], [[0, 0, 1.2], 'z(↑)'], [[0, 0, -1.2], '↓']]) {
+        const q = proj(p, R, cx, cy); c.fillText(lab, q[0], q[1]);
+      }
+      // 軌跡
+      for (let k = 1; k < trail.length; k++) {
+        const a = proj(trail[k - 1], R, cx, cy), b = proj(trail[k], R, cx, cy);
+        c.strokeStyle = C.accent; c.globalAlpha = 0.15 + 0.85 * k / trail.length; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+      }
+      c.globalAlpha = 1;
+      // 磁場
+      const B = Bvec(), o = proj([0, 0, 0], R, cx, cy), bt = proj([B[0] * 1.12, B[1] * 1.12, B[2] * 1.12], R, cx, cy), bb = proj([-B[0] * 1.12, -B[1] * 1.12, -B[2] * 1.12], R, cx, cy);
+      c.strokeStyle = C.green; c.globalAlpha = 0.5; c.lineWidth = 1.5; c.setLineDash([4, 4]); c.beginPath(); c.moveTo(bb[0], bb[1]); c.lineTo(o[0], o[1]); c.stroke(); c.setLineDash([]); c.globalAlpha = 1;
+      arrow(c, o[0], o[1], bt[0], bt[1], C.green, 2.6);
+      c.fillStyle = C.green; c.textAlign = 'left'; c.fillText('B', bt[0] + 5, bt[1] - 6);
+      // スピン
+      const s = proj(v, R, cx, cy);
+      arrow(c, o[0], o[1], s[0], s[1], C.warm, 3.4);
+      c.fillStyle = C.warm; c.strokeStyle = C.surface; c.lineWidth = 2; c.beginPath(); c.arc(s[0], s[1], 5, 0, TAU); c.fill(); c.stroke();
+    }
+    function drawPlot() {
+      g.clearRect(0, 0, GW, GH); g.fillStyle = C.stage; g.fillRect(0, 0, GW, GH);
+      const x0 = 28, x1 = GW - 8, y0 = 10, y1 = GH - 10, ym = (y0 + y1) / 2, hh = (y1 - y0) / 2;
+      g.strokeStyle = C.grid; g.lineWidth = 1; g.font = MONO; g.fillStyle = C['ink-3']; g.textAlign = 'right'; g.textBaseline = 'middle';
+      for (const a of [-1, 0, 1]) { g.beginPath(); g.moveTo(x0, ym - a * hh); g.lineTo(x1, ym - a * hh); g.stroke(); g.fillText(a.toString(), x0 - 4, ym - a * hh); }
+      const tx = (tt) => x1 - (t - tt) / WIN * (x1 - x0);
+      function trace(idx, col) {
+        g.strokeStyle = col; g.lineWidth = 2.2; g.lineJoin = 'round'; g.beginPath(); let first = true, tp = -1;
+        for (const h of hist) { const X = tx(h[0]), Y = ym - h[idx] * hh; if (first || h[0] - tp > 0.3) { g.moveTo(X, Y); first = false; } else g.lineTo(X, Y); tp = h[0]; }
+        g.stroke();
+      }
+      trace(3, C.accent); trace(1, C.warm); trace(2, C.violet);
+    }
+    function meters() {
+      setText('qs-pu', ((1 + v[2]) / 2).toFixed(3));
+      setText('qs-T', (2 * PI / w).toFixed(2));
+      setText('qs-last', last);
+    }
+    function advance(dt) {
+      const h = dt * RATE; v = spinRotate(v, Bvec(), w, h); const m = Math.hypot(v[0], v[1], v[2]); v = [v[0] / m, v[1] / m, v[2] / m]; t += h;
+      hist.push([t, v[0], v[1], v[2]]);
+      while (hist.length && hist[0][0] < t - WIN) hist.shift();
+      trail.push(v.slice()); if (trail.length > 260) trail.shift();
+    }
+    bindChips('qs-init', (k) => { init = k; reset(); });
+    bindRange('qs-b', (x) => x + '°', (x) => { beta = x; trail = []; });
+    bindRange('qs-w', (x) => x.toFixed(1), (x) => { w = x; });
+    $('qs-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('qs-pause', paused); });
+    $('qs-reset').addEventListener('click', reset);
+    $('qs-meas').addEventListener('click', () => {
+      const p = (1 + v[2]) / 2, up = Math.random() < p;
+      last = (up ? '上向き' : '下向き') + '(確率 ' + (100 * (up ? p : 1 - p)).toFixed(0) + '%)';
+      v = [0, 0, up ? 1 : -1]; trail = [];
+    });
+    setPauseLabel('qs-pause', paused);
+    function resize() { const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; const q = fit(cp); g = q.ctx; GW = q.w; GH = q.h; }
+    function frame(dt) { if (!paused) advance(dt); drawSphere(); drawPlot(); meters(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  startApp(['qw', 'qt', 'qu', 'qh', 'qa', 'qs'], { qw: QW, qt: QT, qu: QU, qh: QH, qa: QA, qs: QS });
 })();
 </script>
 </body></html>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>熱・統計力学ラボ | SimPhys</title>
-<meta name="description" content="気体分子の運動とマクスウェル分布、イジング模型の相転移、エントロピー増大を動かして確かめる、学部熱・統計力学のシミュレーション。">
+<meta name="description" content="気体分子の運動とマクスウェル分布、イジング模型の相転移、エントロピー増大、ブラウン運動、熱伝導、黒体放射を動かして確かめる、学部熱・統計力学のシミュレーション。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
@@ -188,13 +188,16 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
   <header class="head">
     <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 熱・統計力学 · 試作</p>
     <h1>熱・統計力学ラボ</h1>
-    <p class="lede">温度や圧力、エントロピーは、粒子が多数集まって初めて現れる量です。気体、イジング模型、混ざり合いの3つを、粒子の動きから確かめます。</p>
+    <p class="lede">温度や圧力、エントロピーは、粒子が多数集まって初めて現れる量です。気体、イジング模型、混ざり合い、ブラウン運動、熱伝導、黒体放射の6つを、動かして確かめます。</p>
   </header>
 
   <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
     <button class="tab" role="tab" id="tab-tg" aria-controls="panel-tg" aria-selected="true" tabindex="0">気体</button>
     <button class="tab" role="tab" id="tab-ti" aria-controls="panel-ti" aria-selected="false" tabindex="-1">イジング模型</button>
     <button class="tab" role="tab" id="tab-te" aria-controls="panel-te" aria-selected="false" tabindex="-1">エントロピー</button>
+    <button class="tab" role="tab" id="tab-br" aria-controls="panel-br" aria-selected="false" tabindex="-1">ブラウン運動</button>
+    <button class="tab" role="tab" id="tab-hc" aria-controls="panel-hc" aria-selected="false" tabindex="-1">熱伝導</button>
+    <button class="tab" role="tab" id="tab-bb" aria-controls="panel-bb" aria-selected="false" tabindex="-1">黒体放射</button>
   </div>
 
   <!-- 1. 気体 -->
@@ -494,6 +497,262 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     </div>
   </section>
 
+  <!-- 4. ブラウン運動 -->
+  <section class="panel" id="panel-br" role="tabpanel" aria-labelledby="tab-br" hidden>
+    <div class="intro">
+      <h2>ふらふらした動きでも、広がり方には法則がある</h2>
+      <p>小さな粒子は、まわりの分子に絶えずぶつかられて、ランダムに動きます。たくさんの粒子の平均を取ると、散らばりの大きさが時間とともに決まった形で増えていきます。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-br" data-aspect="0.8" role="img" aria-label="原点から出発した多数の粒子が、ランダムに散らばっていく様子。3つの粒子には軌跡が描かれる。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>粒子(最初はすべて中心)</span>
+            <span><i class="dot warm"></i>3つの粒子の軌跡</span>
+            <span>破線の円: 平均の距離 √⟨r²⟩</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-bm" data-aspect="0.6" role="img" aria-label="平均二乗変位の時間変化を両対数で表したグラフ。短い時間では傾き2、長い時間では傾き1に近づく。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>測定した ⟨r²⟩</span>
+            <span><i class="dot warm"></i>理論</span>
+            <span>両対数。破線は傾き 2(等速運動)と傾き 1(拡散)</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="br-g"><span>摩擦の強さ γ</span><output id="br-g-v"></output></label>
+          <input type="range" id="br-g" min="0.2" max="5" step="0.1" value="1">
+        </div>
+        <div class="field">
+          <label for="br-k"><span>温度 kT</span><output id="br-k-v"></output></label>
+          <input type="range" id="br-k" min="0.5" max="3" step="0.1" value="1">
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="br-pause">一時停止</button>
+          <button class="btn" id="br-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">時間 t</span><span class="v" id="br-t">0</span></div>
+          <div class="meter"><span class="k">測定した ⟨r²⟩</span><span class="v" id="br-m">0</span></div>
+          <div class="meter"><span class="k">理論の ⟨r²⟩</span><span class="v" id="br-th">0</span></div>
+          <div class="meter"><span class="k">拡散係数 D = kT/γ</span><span class="v" id="br-d">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>グラフの左側(短い時間)では、傾きが 2 です。まだ分子にぶつかる回数が少なく、粒子はほぼ一定の速度で飛んでいます。</li>
+        <li>時間が 1/γ を過ぎるころから、傾きが 1 に近づきます。これが拡散で、平均の二乗距離が時間に比例して増えます(⟨r²⟩ = 4Dt)。距離そのものは、時間の平方根でしか増えません。</li>
+        <li>温度を上げると D が大きくなり、同じ時間でより遠くへ広がります。摩擦を強くすると D は小さくなり、広がりが遅くなります(アインシュタインの関係 D = kT/γ)。</li>
+        <li>3本の軌跡を見ると、1つ1つの粒子の動きはまったく予測できません。しかし、全体の広がり方(破線の円の大きさ)は、毎回ほぼ同じです。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>m</i> d<b>v</b>/d<i>t</i> = −<i>mγ</i><b>v</b> + (ランダムな力)</span>
+        <span class="ln">⟨<i>r</i>²⟩ = 4(<i>kT</i>/<i>mγ</i>) [<i>t</i> − (1 − <i>e</i><sup>−<i>γt</i></sup>)/<i>γ</i>]</span>
+      </div>
+      <p class="foot">2次元で、m = 1 の単位です。600個の粒子の平均を、ランジュバン方程式から直接計算しています。時間は対数のめもりで、自動で進みます。</p>
+    </div>
+  
+    <div class="more" data-more="br">
+      <h3>もう少し詳しく</h3>
+      <p>水中の花粉のように小さな粒子は、まわりの分子に四方八方からぶつかられて、ふらふらと動きます(ブラウン運動)。1個の分子の衝突は見えませんが、無数の衝突の合計が、ランダムな力として粒子に働きます。この力と、動きに比例する摩擦力(粘性抵抗)を合わせたものが、ランジュバン方程式です。</p>
+      <p>個々の粒子の動きは予測できませんが、たくさんの粒子の平均には法則があります。短い時間では、粒子はほぼ等速で動き、平均二乗変位は t² に比例します。長い時間では、衝突のたびに向きがばらばらになり、平均二乗変位は t に比例します(拡散)。その比例係数が拡散係数 D で、D = kT/γ(アインシュタインの関係)です。</p>
+      <p>ペランは、この拡散の測定から、アボガドロ数を実験で求めました(1900年代初め)。目に見える粒子の動きから、見えない分子の存在を確かめたことで、原子論の決定的な証拠になりました。ゆらぎの大きさと摩擦の大きさが、同じ熱運動から生まれているという考え方は、揺動散逸定理として一般化されています。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>摩擦 γ と温度 kT を変えて、グラフの傾きが 2 から 1 へ切り替わる位置(t ≈ 1/γ)が動くのを見ます。</li>
+        <li>温度を上げて、同じ時間での広がり(破線の円)がどう変わるかを比べます。</li>
+        <li>「最初から」を何度か押して、3つの粒子の軌跡は毎回違うのに、円の大きさはほぼ同じになることを確かめます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>距離ではなく、距離の2乗を平均するのはなぜですか。</dt>
+        <dd>ランダムな動きでは、平均の位置はゼロのままで、向きが打ち消し合うからです。2乗にすると打ち消しがなくなり、広がりの大きさが残ります。</dd>
+        <dt>粒子がじっとしないのは、エネルギーはどこから来るのですか。</dt>
+        <dd>まわりの分子の熱運動からです。粒子は分子と衝突して、エネルギーを受け取ったり渡したりしています。平均すると、粒子の運動エネルギーは温度で決まった値に落ち着きます(等分配則)。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 5. 熱伝導 -->
+  <section class="panel" id="panel-hc" role="tabpanel" aria-labelledby="tab-hc" hidden>
+    <div class="intro">
+      <h2>でこぼこの温度は、細かいものほど速くならされる</h2>
+      <p>1本の棒の温度分布が、熱伝導でどう変わるかを見ます。図をなぞって温度を描き、時間とともに広がり、なだらかになっていくのを確かめてください。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-hc" class="touchable" data-aspect="0.6" role="img" aria-label="棒の温度分布。上の帯が温度を色で表し、下のグラフが温度の高さを表す。なぞって温度を描き換えられる。"></canvas></div>
+          <figcaption>
+            <span><i class="dot warm"></i>温度 u(x)(図をなぞって描き換えられます)</span>
+            <span>上の帯は同じ温度を色で表したもの</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>はじめの温度</span></span>
+          <div class="btns" id="hc-preset">
+            <button class="chip" data-v="0" aria-pressed="true">山</button>
+            <button class="chip" data-v="1" aria-pressed="false">段差</button>
+            <button class="chip" data-v="2" aria-pressed="false">でこぼこ</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>棒の両端</span></span>
+          <div class="btns" id="hc-bc">
+            <button class="chip" data-v="0" aria-pressed="true">温度 0 に固定</button>
+            <button class="chip" data-v="1" aria-pressed="false">断熱(熱が出ない)</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="hc-a"><span>熱の伝わりやすさ α</span><output id="hc-a-v"></output></label>
+          <input type="range" id="hc-a" min="0.005" max="0.1" step="0.005" value="0.02">
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="hc-pause">一時停止</button>
+          <button class="btn" id="hc-reset">はじめの温度へ戻す</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">時間 t</span><span class="v" id="hc-t">0</span></div>
+          <div class="meter"><span class="k">熱量(はじめを 100%)</span><span class="v" id="hc-q">100%</span></div>
+          <div class="meter"><span class="k">最高温度</span><span class="v" id="hc-max">0</span></div>
+          <div class="meter"><span class="k">ならされる時間 1/(απ²)</span><span class="v" id="hc-tau">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>「山」を選んで、両端を断熱にします。山はなだらかに広がり、最後は全体が同じ温度になります。熱量は途中で変わりません(エネルギー保存)。</li>
+        <li>両端を温度 0 に固定すると、熱が端から逃げていき、最終的に全体が 0 になります。熱量が減っていく様子を、メーターで確かめてください。</li>
+        <li>「でこぼこ」では、細かい凹凸は急にならされ、ゆるやかなうねりだけが長く残ります。波長が半分の凹凸は、4倍の速さで消えます。</li>
+        <li>熱の伝わりやすさ α を上げると、すべてが速くなります。同じ時間でも、広がる距離は √α に比例します。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln">∂<i>u</i>/∂<i>t</i> = <i>α</i> ∂²<i>u</i>/∂<i>x</i>²</span>
+        <span class="ln"><i>u</i> = <i>A</i> sin(<i>kx</i>) <i>e</i><sup>−<i>αk</i>²<i>t</i></sup>(波数 <i>k</i> の凹凸は、<i>k</i>² に比例した速さで消える)</span>
+      </div>
+      <p class="foot">棒の長さを 1 とした単位です。差分法で、時間を細かく刻んで解いています。温度の目盛りは最大 1 を基準にしています。</p>
+    </div>
+  
+    <div class="more" data-more="hc">
+      <h3>もう少し詳しく</h3>
+      <p>熱は、温度の高いほうから低いほうへ流れます。その流れの強さは温度の傾きに比例し(フーリエの法則)、これにエネルギー保存を組み合わせると、拡散方程式 ∂u/∂t = α ∂²u/∂x² が得られます。温度の曲がり(2階微分)が大きい場所ほど、速く温度が変わります。</p>
+      <p>温度分布は、sin(kx) のような波の重ね合わせに分けられます(フーリエ級数)。各成分は、形を保ったまま e^{−αk²t} で減衰します。波長が半分(k が2倍)の成分は4倍の速さで消えるので、細かい凹凸が先になくなり、いちばんなだらかな成分だけが最後まで残ります。</p>
+      <p>境界の条件で結果が変わります。両端の温度を固定すると、熱は端から出ていき、最後は全体が固定した温度になります。断熱の端では熱が出入りできず、熱量が保存されたまま、全体が平均の温度へ近づきます。冷める時間の見積もりや、断熱材の設計など、身近な現象に使われる方程式です。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>「山」を、断熱の条件で動かします。山のてっぺんが下がり、すそが広がる様子を、熱量が一定であることとあわせて確かめます。</li>
+        <li>「でこぼこ」で、細かい凹凸と大きなうねりのどちらが先に消えるかを見ます。</li>
+        <li>図を自分でなぞって、ギザギザの温度を描き、どう変わるか観察します。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>熱が伝わる速さに、上限はないのですか。</dt>
+        <dd>この拡散方程式では、遠くでも瞬時にごくわずかな変化が起きる形になっています。実際には熱は有限の速さで伝わりますが、日常の場面では、この差は無視できます。</dd>
+        <dt>広がる距離が、時間に比例せず、√t に比例するのはなぜですか。</dt>
+        <dd>ブラウン運動と同じ理由です。熱の運び手(分子)が、ランダムに動いて広がるので、距離の2乗が時間に比例します。</dd>
+      </dl>
+    </div>
+  </section>
+
+  <!-- 6. 黒体放射 -->
+  <section class="panel" id="panel-bb" role="tabpanel" aria-labelledby="tab-bb" hidden>
+    <div class="intro">
+      <h2>熱いものは光る。温度が上がると、色が赤から青へ移る</h2>
+      <p>物体が出す熱放射の波長ごとの強さを、温度を変えて見ます。ピークの波長は温度に反比例し、全体の強さは温度の4乗で増えます。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-bb" data-aspect="0.65" role="img" aria-label="黒体放射の波長ごとの強さのグラフ。ピークの位置と可視光の範囲、古典論の予想が示される。右上は見かけの色。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>プランクの式</span>
+            <span><i class="dot warm"></i>ピーク波長(ウィーンの変位則)</span>
+            <span>破線: 古典論(レイリー・ジーンズ)の予想</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="bb-t"><span>温度 T [K]</span><output id="bb-t-v"></output></label>
+          <input type="range" id="bb-t" min="1000" max="12000" step="100" value="5800">
+        </div>
+        <div class="field">
+          <span class="lab"><span>身近な温度</span></span>
+          <div class="btns" id="bb-pre">
+            <button class="chip" data-v="1900" aria-pressed="false">ろうそく</button>
+            <button class="chip" data-v="2800" aria-pressed="false">白熱電球</button>
+            <button class="chip" data-v="5800" aria-pressed="true">太陽</button>
+            <button class="chip" data-v="9900" aria-pressed="false">シリウス</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>縦軸</span></span>
+          <div class="btns" id="bb-mode">
+            <button class="chip" data-v="1" aria-pressed="true">最大を 1 にそろえる</button>
+            <button class="chip" data-v="0" aria-pressed="false">6000 K を基準にした実際の強さ</button>
+          </div>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">ピーク波長</span><span class="v" id="bb-l">0</span></div>
+          <div class="meter"><span class="k">全放射(5778 K を 1)</span><span class="v" id="bb-p">0</span></div>
+          <div class="meter"><span class="k">可視光に出る割合</span><span class="v" id="bb-v">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>温度を上げると、ピークが左(短い波長)へ動きます。ピークの波長は温度に反比例します(ウィーンの変位則 λ<sub>max</sub> T = 2898 μm·K)。太陽の 5800 K では約 500 nm、つまり可視光の真ん中です。</li>
+        <li>「実際の強さ」に切り替えると、温度が2倍になると全体の強さが16倍になる(T⁴)ことがわかります。低温の物体が可視光でほとんど見えないのも、これで説明できます。</li>
+        <li>破線は、量子の考えを使わない古典論の予想です。長い波長ではよく合いますが、短い波長では強さが際限なく大きくなってしまいます(紫外破綻)。プランクがエネルギーの単位 hν を導入して、この矛盾を解きました。</li>
+        <li>右上の見かけの色は、可視光の分光から計算しています。1900 K では赤みがかった橙色、6500 K 付近でほぼ白、1万 K では青白くなります。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>B<sub>λ</sub></i> = (2<i>hc</i>²/<i>λ</i>⁵) / (<i>e</i><sup><i>hc</i>/<i>λkT</i></sup> − 1)</span>
+        <span class="ln"><i>λ</i><sub>max</sub> <i>T</i> = 2.898 × 10⁻³ m·K,　∫<i>B<sub>λ</sub></i> d<i>λ</i> ∝ <i>T</i>⁴</span>
+      </div>
+      <p class="foot">波長ごとの強さの相対値です。見かけの色は、近似式で求めた目の感度の曲線を使った目安で、実際の見え方とは少し違うことがあります。</p>
+    </div>
+  
+    <div class="more" data-more="bb">
+      <h3>もう少し詳しく</h3>
+      <p>あらゆる物体は、温度に応じた光(熱放射)を出します。外から来る光をすべて吸収する理想的な物体(黒体)が出す光のスペクトルは、温度だけで決まり、プランクの式で表されます。赤く熱した鉄、太陽、白熱電球の光は、どれも黒体放射でよく近似できます。</p>
+      <p>19世紀の終わりには、古典的な電磁気学と統計力学から、レイリー・ジーンズの式が導かれていました。しかし、この式は短い波長で強さが際限なく大きくなり、実験(長波長ではよく合い、短波長では急に下がる)と食い違いました。プランクは、光のエネルギーが hν の整数倍の単位でしかやり取りされないと仮定して、実験と合う式を得ました。量子論の出発点になった仕事です。</p>
+      <p>温度が上がると、ピークが短い波長へ移ります(ウィーンの変位則)。同時に、全体の強さは T⁴ で増えます(ステファン・ボルツマンの法則)。星の色から表面温度を推定できるのは、このためです。太陽(約 5800 K)のピークは可視光の中にあり、私たちの目が可視光に感度をもつことと、よく合っています。</p>
+      <h3>試してみよう</h3>
+      <ol>
+        <li>温度を 2800 K(電球)から 5800 K(太陽)まで動かして、ピークの位置と、見かけの色の変化を見ます。</li>
+        <li>「実際の強さ」に切り替え、5800 K と 9900 K の高さを比べます。</li>
+        <li>破線(古典論)と実線(プランク)が、どの波長から食い違うかを確かめます。</li>
+      </ol>
+      <h3>よくある疑問</h3>
+      <dl class="qa">
+        <dt>ピークが可視光の外にあると、見えないのですか。</dt>
+        <dd>低温の物体は、ピークが赤外にあるので、ほとんど見えません。それでも、ピークから離れた可視光の部分にも、少しは出ています。800 K ほどで、赤い光が見えはじめます。</dd>
+        <dt>実際の物体は、完全な黒体ではないのでは。</dt>
+        <dd>そのとおりで、実際の物体は、波長ごとに黒体より弱く光ります。ただし、太陽や星、溶けた金属などは、黒体にかなり近いので、温度を測るのによく使われます。</dd>
+      </dl>
+    </div>
+  </section>
+
   <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
   <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
 </div>
@@ -755,6 +1014,67 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     }
   }
   function mixLeft(m) { let n = 0; for (let i = 0; i < m.N; i++) if (m.x[i] < m.W / 2) n++; return n; }
+
+  // ---- ブラウン運動: ランジュバン方程式(2次元、質量 1)。速度は厳密な OU 過程で更新する ----
+  function gaussRand(rng) { return Math.sqrt(-2 * Math.log(1 - rng())) * Math.cos(2 * Math.PI * rng()); }
+  function brMake(N, kT, rng) {
+    const b = { N: N, x: new Float64Array(N), y: new Float64Array(N), vx: new Float64Array(N), vy: new Float64Array(N), t: 0 };
+    const sv = Math.sqrt(kT);
+    for (let i = 0; i < N; i++) { b.vx[i] = sv * gaussRand(rng); b.vy[i] = sv * gaussRand(rng); }
+    return b;
+  }
+  function brStep(b, h, gam, kT, rng) {
+    const e = Math.exp(-gam * h), s = Math.sqrt(kT * (1 - e * e));
+    for (let i = 0; i < b.N; i++) {
+      const ux = b.vx[i], uy = b.vy[i];
+      const wx = ux * e + s * gaussRand(rng), wy = uy * e + s * gaussRand(rng);
+      b.x[i] += 0.5 * (ux + wx) * h; b.y[i] += 0.5 * (uy + wy) * h;
+      b.vx[i] = wx; b.vy[i] = wy;
+    }
+    b.t += h;
+  }
+  function brMSD(b) { let s = 0; for (let i = 0; i < b.N; i++) s += b.x[i] * b.x[i] + b.y[i] * b.y[i]; return s / b.N; }
+  // 理論値: ⟨r²⟩ = 4 (kT/γ) [t − (1 − e^{−γt})/γ]。短い時間では 2 kT t²(等速運動)、長い時間では 4 D t
+  function brMSDth(t, gam, kT) { return 4 * (kT / gam) * (t - (1 - Math.exp(-gam * t)) / gam); }
+
+  // ---- 熱伝導(1次元の拡散方程式、長さ 1)。bc 0: 両端を 0 に固定、bc 1: 断熱 ----
+  function heatEvolve(u, alpha, dx, T, bc) {
+    const N = u.length, r0 = 0.4, nsub = Math.max(1, Math.ceil(alpha * T / (r0 * dx * dx))), dt = T / nsub, r = alpha * dt / (dx * dx);
+    let a = u, b = new Float64Array(N);
+    for (let s = 0; s < nsub; s++) {
+      for (let i = 1; i < N - 1; i++) b[i] = a[i] + r * (a[i + 1] - 2 * a[i] + a[i - 1]);
+      if (bc === 1) { b[0] = a[0] + 2 * r * (a[1] - a[0]); b[N - 1] = a[N - 1] + 2 * r * (a[N - 2] - a[N - 1]); }
+      else { b[0] = 0; b[N - 1] = 0; }
+      const t = a; a = b; b = t;
+    }
+    if (a !== u) u.set(a);
+    return u;
+  }
+  function heatTotal(u, dx) { let s = 0; for (let i = 0; i < u.length; i++) s += u[i]; return (s - 0.5 * u[0] - 0.5 * u[u.length - 1]) * dx; }
+
+  // ---- 黒体放射。波長 lam (nm)、温度 T (K)。分光放射輝度の相対値 λ⁻⁵ / (exp(hc/λkT) − 1) ----
+  const HCK = 1.438777e7;      // hc/k [nm·K]
+  const WIEN_B = 2.897772e6;   // λ_max T [nm·K]
+  function planck(lam, T) { return Math.pow(lam, -5) / Math.expm1(HCK / (lam * T)); }
+  function rayleighJeans(lam, T) { return T / (HCK * Math.pow(lam, 4)); }
+  function wienPeak(T) { return WIEN_B / T; }
+  function bbStefan(T) { return Math.pow(T / HCK, 4) * Math.pow(Math.PI, 4) / 15; }   // ∫ planck dλ の厳密値
+  function gl(l, m, s1, s2) { const d = (l - m) / (l < m ? s1 : s2); return Math.exp(-0.5 * d * d); }
+  function cieXYZ(l) {
+    return [1.056 * gl(l, 599.8, 37.9, 31.0) + 0.362 * gl(l, 442.0, 16.0, 26.7) - 0.065 * gl(l, 501.1, 20.4, 26.2),
+      0.821 * gl(l, 568.8, 46.9, 40.5) + 0.286 * gl(l, 530.9, 16.3, 31.1),
+      1.217 * gl(l, 437.0, 11.8, 36.0) + 0.681 * gl(l, 459.0, 26.0, 13.8)];
+  }
+  // 黒体の見かけの色(0〜255 の sRGB)。可視光の分光を XYZ に積分して、最大成分を 1 にそろえる
+  function bbColor(T) {
+    let X = 0, Y = 0, Z = 0;
+    for (let l = 380; l <= 780; l += 5) { const w = planck(l, T), c = cieXYZ(l); X += w * c[0]; Y += w * c[1]; Z += w * c[2]; }
+    let r = 3.2406 * X - 1.5372 * Y - 0.4986 * Z, g = -0.9689 * X + 1.8758 * Y + 0.0415 * Z, b = 0.0557 * X - 0.2040 * Y + 1.0570 * Z;
+    r = Math.max(r, 0); g = Math.max(g, 0); b = Math.max(b, 0);
+    const m = Math.max(r, g, b) || 1;
+    const f = (v) => { v /= m; return Math.round(255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055)); };
+    return [f(r), f(g), f(b)];
+  }
   /* PHYSICS-END */
 
   /* ---------- 1. 気体 ---------- */
@@ -952,7 +1272,244 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
     return { frame: frame, resize: resize, invalidate: invalidate };
   })();
 
-  startApp(['tg', 'ti', 'te'], { tg: TG, ti: TI, te: TE });
+  /* ---------- 4. ブラウン運動 ---------- */
+  const BR = (function () {
+    const cvA = $('cv-br'), cvM = $('cv-bm');
+    const NP = 600, TMAX = 150, T0 = 0.01;
+    let a, sa = { w: 0, h: 0 }, b, sb = { w: 0, h: 0 };
+    let gam = 1, kT = 1, paused = RM, bd, hist, nextS, trails, view = 3, acc = 0;
+    function reset() {
+      bd = brMake(NP, kT, Math.random); hist = []; nextS = T0; acc = 0; view = 3;
+      trails = [0, 1, 2].map(() => [[0, 0]]);
+    }
+    function hStep() { return Math.min(0.01, 0.05 / gam); }
+    function advance(dt) {
+      if (bd.t >= TMAX) return;
+      const rate = Math.max(0.6, 0.4 * bd.t);
+      acc += dt * rate;
+      const h = hStep(); let guard = 0;
+      while (acc >= h && guard++ < 4000 && bd.t < TMAX) {
+        brStep(bd, h, gam, kT, Math.random); acc -= h;
+        for (let k = 0; k < 3; k++) { const tr = trails[k]; if (bd.t * 1 >= (tr.nt || 0)) { tr.push([bd.x[k], bd.y[k]]); tr.nt = bd.t + Math.min(0.05, 0.002 + bd.t * 0.01); if (tr.length > 700) tr.shift(); } }
+        if (bd.t >= nextS) { hist.push([bd.t, brMSD(bd)]); nextS = bd.t * 1.05; }
+      }
+    }
+    function drawCloud() {
+      const W = sa.w, H = sa.h, rms = Math.sqrt(Math.max(brMSD(bd), 1e-6));
+      const want = Math.max(2, 2.6 * rms); view += (want - view) * 0.06;
+      const sc = Math.min(W, H) / 2 / view, cx = W / 2, cy = H / 2;
+      a.clearRect(0, 0, W, H); a.fillStyle = C.stage; a.fillRect(0, 0, W, H);
+      a.strokeStyle = C.grid; a.lineWidth = 1; a.beginPath(); a.moveTo(0, cy); a.lineTo(W, cy); a.moveTo(cx, 0); a.lineTo(cx, H); a.stroke();
+      a.fillStyle = C.accent; a.globalAlpha = 0.55;
+      for (let i = 3; i < bd.N; i++) { a.beginPath(); a.arc(cx + bd.x[i] * sc, cy - bd.y[i] * sc, 2.2, 0, TAU); a.fill(); }
+      a.globalAlpha = 1;
+      const cols = [C.warm, C.violet, C.green];
+      for (let k = 0; k < 3; k++) {
+        const tr = trails[k]; a.strokeStyle = cols[k]; a.lineWidth = 1.6; a.lineJoin = 'round'; a.beginPath();
+        tr.forEach((p, i) => { const X = cx + p[0] * sc, Y = cy - p[1] * sc; if (i) a.lineTo(X, Y); else a.moveTo(X, Y); });
+        a.stroke();
+        a.fillStyle = cols[k]; a.strokeStyle = C.surface; a.lineWidth = 1.5; a.beginPath(); a.arc(cx + bd.x[k] * sc, cy - bd.y[k] * sc, 5, 0, TAU); a.fill(); a.stroke();
+      }
+      a.strokeStyle = C['ink-2']; a.setLineDash([5, 4]); a.lineWidth = 1.5; a.beginPath(); a.arc(cx, cy, rms * sc, 0, TAU); a.stroke(); a.setLineDash([]);
+      const L = niceStep(view * 0.5), pL = L * sc;
+      a.strokeStyle = C.ink; a.lineWidth = 2; a.beginPath(); a.moveTo(12, H - 14); a.lineTo(12 + pL, H - 14); a.stroke();
+      a.fillStyle = C.ink; a.font = MONO; a.textAlign = 'left'; a.textBaseline = 'bottom'; a.fillText('長さ ' + L, 12, H - 18);
+    }
+    function drawMsd() {
+      const W = sb.w, H = sb.h;
+      b.clearRect(0, 0, W, H); b.fillStyle = C.stage; b.fillRect(0, 0, W, H);
+      const px0 = 40, px1 = W - 12, py0 = 12, py1 = H - 34;
+      const tl0 = Math.log10(T0), tl1 = Math.log10(TMAX);
+      const ml0 = Math.log10(brMSDth(T0, 5, 3)) - 0.3, ml1 = Math.log10(brMSDth(TMAX, 0.2, 0.5 > kT ? 0.5 : kT) ) + 0.2;
+      const lo = Math.floor(Math.log10(Math.max(1e-6, 2 * kT * T0 * T0)) - 0.4), hi = Math.ceil(Math.log10(4 * kT / gam * TMAX) + 0.3);
+      const X = (t) => px0 + (Math.log10(t) - tl0) / (tl1 - tl0) * (px1 - px0), Y = (m) => py1 - (Math.log10(Math.max(m, 1e-12)) - lo) / (hi - lo) * (py1 - py0);
+      b.font = MONO; b.strokeStyle = C.grid; b.fillStyle = C['ink-3']; b.lineWidth = 1; b.textAlign = 'center'; b.textBaseline = 'top';
+      for (let e = Math.ceil(tl0); e <= tl1; e++) { b.beginPath(); b.moveTo(X(Math.pow(10, e)), py0); b.lineTo(X(Math.pow(10, e)), py1); b.stroke(); b.fillText(Math.pow(10, e) < 1 ? Math.pow(10, e).toString() : Math.pow(10, e).toString(), X(Math.pow(10, e)), py1 + 5); }
+      b.textAlign = 'right'; b.textBaseline = 'middle';
+      for (let e = lo; e <= hi; e++) { b.beginPath(); b.moveTo(px0, Y(Math.pow(10, e))); b.lineTo(px1, Y(Math.pow(10, e))); b.stroke(); if ((hi - lo) < 9 || e % 2 === 0) b.fillText('1e' + e, px0 - 4, Y(Math.pow(10, e))); }
+      b.fillStyle = C['ink-3']; b.textAlign = 'right'; b.textBaseline = 'top'; b.fillText('時間 t(対数)', px1, py1 + 18);
+      b.save(); b.beginPath(); b.rect(px0, py0, px1 - px0, py1 - py0); b.clip();
+      // 傾き 2 と傾き 1 の目安
+      b.strokeStyle = C['ink-3']; b.setLineDash([4, 4]); b.lineWidth = 1.3;
+      const t1 = 0.2 / gam, t2 = 30 / gam;
+      b.beginPath(); b.moveTo(X(T0), Y(2 * kT * T0 * T0)); b.lineTo(X(Math.min(TMAX, 3 / gam)), Y(2 * kT * Math.pow(Math.min(TMAX, 3 / gam), 2))); b.stroke();
+      b.beginPath(); b.moveTo(X(Math.max(T0, 0.3 / gam)), Y(4 * kT / gam * Math.max(T0, 0.3 / gam))); b.lineTo(X(TMAX), Y(4 * kT / gam * TMAX)); b.stroke(); b.setLineDash([]);
+      b.strokeStyle = C.warm; b.lineWidth = 2; b.beginPath();
+      for (let k = 0; k <= 120; k++) { const t = Math.pow(10, tl0 + (tl1 - tl0) * k / 120), m = brMSDth(t, gam, kT); if (k) b.lineTo(X(t), Y(m)); else b.moveTo(X(t), Y(m)); }
+      b.stroke();
+      b.strokeStyle = C.accent; b.lineWidth = 2.4; b.beginPath();
+      hist.forEach((p, i) => { if (i) b.lineTo(X(p[0]), Y(p[1])); else b.moveTo(X(p[0]), Y(p[1])); });
+      b.stroke(); b.restore();
+      void ml0; void ml1; void t1; void t2;
+    }
+    function meters() {
+      setText('br-t', bd.t.toFixed(2));
+      setText('br-m', brMSD(bd).toPrecision(3));
+      setText('br-th', brMSDth(Math.max(bd.t, 1e-9), gam, kT).toPrecision(3));
+      setText('br-d', (kT / gam).toFixed(2));
+    }
+    bindRange('br-g', (v) => v.toFixed(1), (v) => { gam = v; reset(); });
+    bindRange('br-k', (v) => v.toFixed(1), (v) => { kT = v; reset(); });
+    $('br-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('br-pause', paused); });
+    $('br-reset').addEventListener('click', reset);
+    setPauseLabel('br-pause', paused);
+    function resize() { const A = fit(cvA); a = A.ctx; sa = A; const B = fit(cvM); b = B.ctx; sb = B; }
+    function frame(dt) { if (!paused) advance(dt); drawCloud(); drawMsd(); meters(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 5. 熱伝導 ---------- */
+  const HC = (function () {
+    const cv = $('cv-hc'), NX = 101, DX = 1 / (NX - 1), RATE = 0.5;
+    let c, W = 0, Hh = 0;
+    let u = new Float64Array(NX), u0 = new Float64Array(NX), alpha = 0.02, bc = 0, paused = RM, t = 0, q0 = 1, pre = 0, last = null;
+    function preset(k) {
+      for (let i = 0; i < NX; i++) {
+        const x = i * DX;
+        u[i] = k === 0 ? Math.exp(-Math.pow((x - 0.5) / 0.08, 2) / 2)
+          : k === 1 ? (x < 0.5 ? 1 : 0)
+          : 0.55 + 0.25 * Math.sin(2 * PI * x * 1) + 0.2 * Math.sin(2 * PI * x * 7);
+        if (k === 2) u[i] = Math.max(0, Math.min(1, u[i]));
+      }
+      if (bc === 0) { u[0] = 0; u[NX - 1] = 0; }
+      store();
+    }
+    function store() { u0.set(u); t = 0; q0 = heatTotal(u, DX) || 1; }
+    function draw() {
+      const stripH = Math.round(Hh * 0.17), px0 = 34, px1 = W - 12, py0 = stripH + 22, py1 = Hh - 24;
+      c.clearRect(0, 0, W, Hh); c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      const lo = rgb(C.stage), hot = rgb(C.warm), X = (x) => px0 + x * (px1 - px0), Y = (v) => py1 - Math.max(0, Math.min(1.08, v)) / 1.08 * (py1 - py0);
+      const n = 100;
+      for (let k = 0; k < n; k++) {
+        const x = (k + 0.5) / n, i = Math.min(NX - 1, Math.round(x / DX)), v = Math.max(0, Math.min(1, u[i]));
+        c.fillStyle = 'rgb(' + Math.round(lo[0] + (hot[0] - lo[0]) * v) + ',' + Math.round(lo[1] + (hot[1] - lo[1]) * v) + ',' + Math.round(lo[2] + (hot[2] - lo[2]) * v) + ')';
+        c.fillRect(px0 + k / n * (px1 - px0), 8, (px1 - px0) / n + 1, stripH);
+      }
+      c.strokeStyle = C.line; c.lineWidth = 1; c.strokeRect(px0, 8, px1 - px0, stripH);
+      c.strokeStyle = C.grid; c.font = MONO; c.fillStyle = C['ink-3']; c.textAlign = 'right'; c.textBaseline = 'middle';
+      for (const v of [0, 0.5, 1]) { c.beginPath(); c.moveTo(px0, Y(v)); c.lineTo(px1, Y(v)); c.stroke(); c.fillText(v.toString(), px0 - 5, Y(v)); }
+      // はじめの形
+      c.strokeStyle = C['ink-3']; c.setLineDash([4, 4]); c.lineWidth = 1.4; c.beginPath();
+      for (let i = 0; i < NX; i++) { if (i) c.lineTo(X(i * DX), Y(u0[i])); else c.moveTo(X(0), Y(u0[0])); }
+      c.stroke(); c.setLineDash([]);
+      c.strokeStyle = C.warm; c.lineWidth = 2.6; c.lineJoin = 'round'; c.beginPath();
+      for (let i = 0; i < NX; i++) { if (i) c.lineTo(X(i * DX), Y(u[i])); else c.moveTo(X(0), Y(u[0])); }
+      c.stroke();
+      c.fillStyle = C['ink-3']; c.textAlign = 'center'; c.textBaseline = 'top';
+      c.fillText('0', px0, py1 + 6); c.fillText('位置 x', (px0 + px1) / 2, py1 + 6); c.fillText('1', px1, py1 + 6);
+      c.textAlign = 'right'; c.fillText('破線: はじめの温度', px1, py0 - 14);
+      if (bc === 0) { c.fillStyle = C.accent; c.fillRect(px0 - 3, py0, 3, py1 - py0); c.fillRect(px1, py0, 3, py1 - py0); }
+    }
+    function meters() {
+      let mx = 0; for (let i = 0; i < NX; i++) if (u[i] > mx) mx = u[i];
+      setText('hc-t', t.toFixed(2));
+      setText('hc-q', (100 * heatTotal(u, DX) / q0).toFixed(0) + '%');
+      setText('hc-max', mx.toFixed(2));
+      setText('hc-tau', bc === 0 ? (1 / (alpha * PI * PI)).toFixed(1) : '—(断熱では一様へ)');
+    }
+    function paintAt(e) {
+      const r = cv.getBoundingClientRect(), px0 = 34, px1 = W - 12, stripH = Math.round(Hh * 0.17), py0 = stripH + 22, py1 = Hh - 24;
+      const px = (e.clientX - r.left) * (W / r.width), py = (e.clientY - r.top) * (Hh / r.height);
+      const x = Math.max(0, Math.min(1, (px - px0) / (px1 - px0))), v = Math.max(0, Math.min(1, (py1 - py) / (py1 - py0) * 1.08));
+      const i = Math.round(x / DX);
+      if (last) {
+        const i0 = last.i, v0 = last.v, n = Math.max(1, Math.abs(i - i0));
+        for (let k = 0; k <= n; k++) { const j = Math.round(i0 + (i - i0) * k / n); u[j] = v0 + (v - v0) * k / n; }
+      } else u[i] = v;
+      if (bc === 0) { u[0] = 0; u[NX - 1] = 0; }
+      last = { i: i, v: v };
+      store();
+    }
+    cv.addEventListener('pointerdown', (e) => { cv.setPointerCapture(e.pointerId); last = null; paintAt(e); });
+    cv.addEventListener('pointermove', (e) => { if (last) paintAt(e); });
+    const end = () => { last = null; };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    bindChips('hc-preset', (v) => { pre = v; preset(v); });
+    bindChips('hc-bc', (v) => { bc = v; if (bc === 0) { u[0] = 0; u[NX - 1] = 0; } store(); });
+    bindRange('hc-a', (v) => v.toFixed(3), (v) => { alpha = v; });
+    $('hc-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('hc-pause', paused); });
+    $('hc-reset').addEventListener('click', () => { u.set(u0); t = 0; q0 = heatTotal(u, DX) || 1; });
+    setPauseLabel('hc-pause', paused);
+    function resize() { const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; }
+    function frame(dt) {
+      if (!paused && !last) { heatEvolve(u, alpha, DX, dt * RATE, bc); t += dt * RATE; }
+      draw(); meters();
+    }
+    function invalidate() {}
+    preset(0);
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 6. 黒体放射 ---------- */
+  const BB = (function () {
+    const cv = $('cv-bb'), LMAX = 3000, REF = 6000;
+    let c, W = 0, Hh = 0, T = 5800, norm = true, dirty = true;
+    function wavRGB(l) {
+      let r = 0, g = 0, b = 0;
+      if (l < 440) { r = -(l - 440) / 60; b = 1; } else if (l < 490) { g = (l - 440) / 50; b = 1; } else if (l < 510) { g = 1; b = -(l - 510) / 20; }
+      else if (l < 580) { r = (l - 510) / 70; g = 1; } else if (l < 645) { r = 1; g = -(l - 645) / 65; } else { r = 1; }
+      const f = l < 420 ? 0.35 + 0.65 * (l - 380) / 40 : l > 700 ? 0.35 + 0.65 * (780 - l) / 80 : 1;
+      return 'rgb(' + Math.round(255 * r * f) + ',' + Math.round(255 * g * f) + ',' + Math.round(255 * b * f) + ')';
+    }
+    function draw() {
+      const px0 = 14, px1 = W - 14, py0 = 14, py1 = Hh - 50;
+      const X = (l) => px0 + l / LMAX * (px1 - px0);
+      const pk = planck(wienPeak(T), T), ymax = norm ? pk * 1.12 : planck(wienPeak(REF), REF) * 1.15;
+      const Y = (v) => py1 - v / ymax * (py1 - py0);
+      c.clearRect(0, 0, W, Hh); c.fillStyle = C.stage; c.fillRect(0, 0, W, Hh);
+      // 可視光の帯
+      c.globalAlpha = 0.16;
+      for (let l = 380; l < 780; l += 4) { c.fillStyle = wavRGB(l); c.fillRect(X(l), py0, X(l + 4) - X(l) + 1, py1 - py0); }
+      c.globalAlpha = 1;
+      c.save(); c.beginPath(); c.rect(px0, py0 - 2, px1 - px0, py1 - py0 + 2); c.clip();
+      // 古典論
+      c.strokeStyle = C['ink-3']; c.setLineDash([5, 4]); c.lineWidth = 1.6; c.beginPath();
+      for (let k = 0; k <= 300; k++) { const l = 60 + (LMAX - 60) * k / 300, v = rayleighJeans(l, T); if (k) c.lineTo(X(l), Y(v)); else c.moveTo(X(l), Y(v)); }
+      c.stroke(); c.setLineDash([]);
+      // プランク
+      c.beginPath(); c.moveTo(X(40), py1);
+      for (let k = 0; k <= 300; k++) { const l = 40 + (LMAX - 40) * k / 300; c.lineTo(X(l), Y(planck(l, T))); }
+      c.lineTo(X(LMAX), py1); c.closePath(); c.fillStyle = C.accent; c.globalAlpha = 0.25; c.fill(); c.globalAlpha = 1;
+      c.strokeStyle = C.accent; c.lineWidth = 2.6; c.lineJoin = 'round'; c.beginPath();
+      for (let k = 0; k <= 300; k++) { const l = 40 + (LMAX - 40) * k / 300, v = planck(l, T); if (k) c.lineTo(X(l), Y(v)); else c.moveTo(X(l), Y(v)); }
+      c.stroke(); c.restore();
+      // ピーク
+      const lp = wienPeak(T);
+      if (lp < LMAX) {
+        c.strokeStyle = C.warm; c.lineWidth = 1.6; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(X(lp), py1); c.lineTo(X(lp), Math.max(py0, Y(pk))); c.stroke(); c.setLineDash([]);
+        if (Y(pk) > py0) { c.fillStyle = C.warm; c.strokeStyle = C.surface; c.lineWidth = 2; c.beginPath(); c.arc(X(lp), Y(pk), 6, 0, TAU); c.fill(); c.stroke(); }
+      }
+      // 軸
+      c.strokeStyle = C.line; c.lineWidth = 1; c.beginPath(); c.moveTo(px0, py1); c.lineTo(px1, py1); c.stroke();
+      c.font = MONO; c.fillStyle = C['ink-3']; c.textAlign = 'center'; c.textBaseline = 'top';
+      for (let l = 0; l <= LMAX; l += 500) { c.beginPath(); c.moveTo(X(l), py1); c.lineTo(X(l), py1 + 4); c.stroke(); c.fillText(l.toString(), X(l), py1 + 6); }
+      c.textAlign = 'right'; c.fillText('波長 [nm]', px1, py1 + 20);
+      c.textAlign = 'left'; c.fillText('可視光 380〜780 nm(色つきの帯)', px0 + 2, py1 + 34);
+      // 見かけの色
+      const col = bbColor(T);
+      c.fillStyle = 'rgb(' + col.join(',') + ')'; c.strokeStyle = C.line; c.lineWidth = 1.2;
+      c.beginPath(); c.roundRect ? c.roundRect(px1 - 74, py0 + 2, 70, 36, 6) : c.rect(px1 - 74, py0 + 2, 70, 36); c.fill(); c.stroke();
+      c.fillStyle = C['ink-3']; c.textAlign = 'right'; c.fillText('見かけの色', px1 - 78, py0 + 14);
+    }
+    function meters() {
+      let vis = 0; const n = 80;
+      for (let k = 0; k < n; k++) { const l = 380 + 400 * (k + 0.5) / n; vis += planck(l, T) * 400 / n; }
+      setText('bb-l', Math.round(wienPeak(T)) + ' nm' + (wienPeak(T) > 780 ? '(赤外)' : wienPeak(T) < 380 ? '(紫外)' : '(可視光)'));
+      setText('bb-p', Math.pow(T / 5778, 4).toFixed(T > 5778 * 3 ? 0 : 2));
+      setText('bb-v', (100 * vis / bbStefan(T)).toFixed(0) + '%');
+    }
+    bindRange('bb-t', (v) => v.toFixed(0), (v) => { T = v; setChip('bb-pre', v); dirty = true; });
+    bindChips('bb-pre', (v) => { setRange('bb-t', v); });
+    bindChips('bb-mode', (v) => { norm = v === 1; dirty = true; });
+    function resize() { const r = fit(cv); c = r.ctx; W = r.w; Hh = r.h; dirty = true; }
+    function frame() { if (dirty) { dirty = false; draw(); meters(); } }
+    function invalidate() { dirty = true; }
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  startApp(['tg', 'ti', 'te', 'br', 'hc', 'bb'], { tg: TG, ti: TI, te: TE, br: BR, hc: HC, bb: BB });
 })();
 </script>
 </body></html>
