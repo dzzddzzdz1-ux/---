@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SimPhys | 学部物理を動かして理解する</title>
-<meta name="description" content="学部物理の、式だけでは想像しにくいところを、シミュレーションで動かして確かめるためのサイト。力学・電磁気から公開中。">
+<meta name="description" content="学部物理の、式だけでは想像しにくいところを、シミュレーションで動かして確かめるためのサイト。力学・電磁気・量子力学・熱統計力学。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
@@ -166,27 +166,37 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 
 .eyebrow a { color: var(--accent); text-decoration: none; }
-h1 .sub { display: block; font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0.04em; margin-top: 4px; }
+.eyebrow a:hover { text-decoration: underline; }
+.sitenav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding-top: 4px; border-top: 1px solid var(--line); }
+.sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
+.sitenav a:hover { color: var(--accent); text-decoration: underline; }
+.sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.doc { display: flex; flex-direction: column; gap: 24px; max-width: 42em; }
+.doc section { display: flex; flex-direction: column; gap: 8px; }
+.doc h2 { font-size: 17px; line-height: 1.5; }
+.doc p, .doc li, .doc dd { color: var(--ink-2); font-size: 14.5px; }
+.doc ul { margin: 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 6px; }
+.doc dl { margin: 0; display: grid; grid-template-columns: 7.5em minmax(0, 1fr); gap: 10px 14px; }
+.doc dt { color: var(--ink-3); font-size: 13px; padding-top: 1px; }
+.doc dd { margin: 0; }
+.doc a { color: var(--accent); overflow-wrap: anywhere; }
+.todo { background: var(--surface); border: 1px dashed var(--warm); border-radius: 8px; padding: 10px 12px; color: var(--ink-2); font-size: 14px; }
 .nb { display: inline-block; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 14px; }
-.card {
-  display: flex; flex-direction: column; gap: 10px; padding: 12px 12px 14px; text-decoration: none; color: inherit;
-  background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0;
-}
+.card { display: flex; flex-direction: column; gap: 10px; padding: 12px 12px 14px; text-decoration: none; color: inherit; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; min-width: 0; }
 a.card:hover { border-color: var(--accent); }
 a.card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
-.card.soon { border-style: dashed; background: transparent; }
 .thumb { border-radius: 8px; background: var(--stage); border: 1px solid var(--line); aspect-ratio: 16 / 9; width: 100%; display: block; }
-.card.soon .thumb { opacity: 0.55; }
 .card h2 { font-size: 18px; display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .card h2 .go { font-size: 13px; font-weight: 500; color: var(--accent); white-space: nowrap; }
-.card.soon h2 .go { color: var(--ink-3); }
 .card p { color: var(--ink-2); font-size: 14px; line-height: 1.7; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; list-style: none; }
 .tags li { font-size: 12px; line-height: 1.4; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); background: var(--stage); }
 .about { display: flex; flex-direction: column; gap: 8px; max-width: 42em; }
 .about h2 { font-size: 16px; }
 .about p { color: var(--ink-2); font-size: 14px; }
+h1 .sub { display: block; font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: 0.04em; margin-top: 4px; }
 </style>
 </head>
 <body>
@@ -229,23 +239,25 @@ a.card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
       <p>目に見えない場の広がりと向きを、電荷や粒子を動かしながら確かめます。</p>
       <ul class="tags"><li>電場と電位</li><li>荷電粒子のドリフト</li><li>電磁波と薄膜干渉</li></ul>
     </a>
-    <div class="card soon">
+    <a class="card" href="quantum.html">
       <svg class="thumb" viewBox="0 0 160 90" role="img" aria-label="井戸型ポテンシャルの波動関数の図">
   <path d="M30 14 V76 H130 V14" fill="none" stroke="var(--ink-3)" stroke-width="1.6"/>
   <path d="M30 50 C 46 20, 66 20, 80 50 S 114 78, 130 50" fill="none" stroke="var(--accent)" stroke-width="1.6" opacity="0.8"/>
 </svg>
-      <h2>量子力学 <span class="go">準備中</span></h2>
-      <p>波動関数やトンネル効果を、波として動かして見られるようにする予定です。</p>
-    </div>
-    <div class="card soon">
+      <h2>量子力学 <span class="go">開く →</span></h2>
+      <p>波動関数を時間発展させて、閉じ込め、トンネル効果、不確定性を確かめます。</p>
+      <ul class="tags"><li>井戸型の重ね合わせ</li><li>トンネル効果</li><li>不確定性</li></ul>
+    </a>
+    <a class="card" href="thermo.html">
       <svg class="thumb" viewBox="0 0 160 90" role="img" aria-label="箱の中を動く粒子の図">
   <rect x="30" y="14" width="100" height="62" rx="3" fill="none" stroke="var(--ink-3)" stroke-width="1.4"/>
   <g fill="var(--accent)" opacity="0.8"><circle cx="48" cy="30" r="3.4"/><circle cx="70" cy="58" r="3.4"/><circle cx="92" cy="28" r="3.4"/><circle cx="110" cy="52" r="3.4"/><circle cx="84" cy="46" r="3.4"/></g>
   <g fill="var(--warm)" opacity="0.8"><circle cx="58" cy="44" r="3.4"/><circle cx="100" cy="66" r="3.4"/><circle cx="120" cy="30" r="3.4"/></g>
 </svg>
-      <h2>熱・統計力学 <span class="go">準備中</span></h2>
-      <p>粒子の集まりから、温度やエントロピーが現れる様子を見られるようにする予定です。</p>
-    </div>
+      <h2>熱・統計力学 <span class="go">開く →</span></h2>
+      <p>粒子の集まりから、温度、相転移、エントロピーが現れる様子を確かめます。</p>
+      <ul class="tags"><li>気体とマクスウェル分布</li><li>イジング模型</li><li>エントロピー</li></ul>
+    </a>
   </main>
 
   <section class="about" aria-labelledby="about-h">
@@ -254,6 +266,7 @@ a.card:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
   </section>
 
   <p class="foot">試作版です。内容は順次追加していきます。</p>
+  <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
 </div>
 </body>
 </html>

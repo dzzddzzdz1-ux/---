@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>量子力学ラボ | SimPhys</title>
+<meta name="description" content="井戸の中の重ね合わせ、トンネル効果、不確定性関係を時間発展させて確かめる、学部量子力学のシミュレーション。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* 基本リセット(単体ページ用) */
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: 実験ノートのような1カラム。上に分野タブ、下に「画面 → 操作 → 読み取り方」の順。広い画面では画面と操作を横に並べる。
+   Color: 青みのある灰色の紙面に、青(A・速度)、橙(B・コリオリ力)、緑(遠心力)、紫(目印)を測定色として使う。
+   Type: 本文は Zen Kaku Gothic New、数値は IBM Plex Mono。 */
+:root {
+  --bg: #EEF2F7;
+  --surface: #FFFFFF;
+  --stage: #F6F8FB;
+  --ink: #142033;
+  --ink-2: #4B5D75;
+  --ink-3: #7A8BA1;
+  --line: #D3DBE6;
+  --grid: #E4EAF2;
+  --accent: #2457D6;
+  --accent-ink: #FFFFFF;
+  --warm: #D9620F;
+  --green: #148A66;
+  --violet: #7B45C9;
+  --focus: #2457D6;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1622;
+    --surface: #16212F;
+    --stage: #111B28;
+    --ink: #E7EEF7;
+    --ink-2: #A3B4C8;
+    --ink-3: #74879E;
+    --line: #2A3A4E;
+    --grid: #1F2D3F;
+    --accent: #6F9CFF;
+    --accent-ink: #0E1622;
+    --warm: #FF9B52;
+    --green: #4DD0A3;
+    --violet: #B994FF;
+    --focus: #8DB2FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1622;
+  --surface: #16212F;
+  --stage: #111B28;
+  --ink: #E7EEF7;
+  --ink-2: #A3B4C8;
+  --ink-3: #74879E;
+  --line: #2A3A4E;
+  --grid: #1F2D3F;
+  --accent: #6F9CFF;
+  --accent-ink: #0E1622;
+  --warm: #FF9B52;
+  --green: #4DD0A3;
+  --violet: #B994FF;
+  --focus: #8DB2FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, p, ul, figure { margin: 0; }
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.head { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--ink-2); }
+h1 { font-size: 30px; line-height: 1.3; font-weight: 700; letter-spacing: 0.02em; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 40em; }
+
+.tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+}
+.tab {
+  font: inherit; font-weight: 500; line-height: 1.3; color: var(--ink-2); background: transparent;
+  border: 0; border-radius: 7px; padding: 10px 4px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, input:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px;
+}
+
+.panel { display: flex; flex-direction: column; gap: 18px; }
+.intro { display: flex; flex-direction: column; gap: 6px; }
+h2 { font-size: 20px; line-height: 1.45; font-weight: 700; text-wrap: balance; }
+.intro p { color: var(--ink-2); max-width: 42em; }
+
+.stage-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 820px) {
+  .stage-grid { grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr); }
+}
+.figs { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.figs.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.fig { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fig figcaption {
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+  display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: center;
+}
+.cv { border: 1px solid var(--line); border-radius: 10px; background: var(--stage); overflow: hidden; }
+.cv canvas { display: block; width: 100%; }
+.cv canvas.touchable { touch-action: none; cursor: crosshair; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+.dot.accent { background: var(--accent); }
+.dot.warm { background: var(--warm); }
+.dot.green { background: var(--green); }
+.dot.violet { background: var(--violet); }
+
+.ctrl {
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+}
+.ctrl.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px 22px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .lab { font-size: 13px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.field output { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+input[type="range"] { width: 100%; height: 28px; margin: 0; accent-color: var(--accent); }
+input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.check, .field label.check { display: flex; justify-content: flex-start; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn, .chip {
+  font: inherit; font-size: 13px; line-height: 1.2; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.meter { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; background: var(--stage); border-radius: 8px; min-width: 0; }
+.meter .k { font-size: 11.5px; line-height: 1.4; color: var(--ink-3); }
+.meter .v { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.read { display: flex; flex-direction: column; gap: 12px; max-width: 46em; }
+.read h3 { font-size: 15px; font-weight: 700; }
+.read ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+.read li::marker { color: var(--ink-3); }
+.eq {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 13.5px; line-height: 2;
+}
+.eq .ln { display: block; white-space: nowrap; }
+.eq i { font-style: italic; }
+.foot { font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+.eyebrow a { color: var(--accent); text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
+.sitenav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding-top: 4px; border-top: 1px solid var(--line); }
+.sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
+.sitenav a:hover { color: var(--accent); text-decoration: underline; }
+.sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 量子力学 · 試作</p>
+    <h1>量子力学ラボ</h1>
+    <p class="lede">波動関数は、式では追えても絵が浮かびにくいものです。閉じ込められた粒子、トンネル効果、不確定性関係の3つを、時間発展させて確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
+    <button class="tab" role="tab" id="tab-qw" aria-controls="panel-qw" aria-selected="true" tabindex="0">井戸型</button>
+    <button class="tab" role="tab" id="tab-qt" aria-controls="panel-qt" aria-selected="false" tabindex="-1">トンネル効果</button>
+    <button class="tab" role="tab" id="tab-qu" aria-controls="panel-qu" aria-selected="false" tabindex="-1">不確定性</button>
+  </div>
+
+  <!-- 1. 井戸と重ね合わせ -->
+  <section class="panel" id="panel-qw" role="tabpanel" aria-labelledby="tab-qw">
+    <div class="intro">
+      <h2>閉じ込められた波は、なぜ「とびとびのエネルギー」になるのか</h2>
+      <p>幅 1 の井戸に閉じ込めた粒子の波動関数を、固有状態(定在波)の足し合わせとして動かします。混ぜる割合を変えて、確率の動きを見てください。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qw" data-aspect="0.5" role="img" aria-label="井戸の中の波動関数の実部(青)と虚部(橙)。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>実部 Re ψ</span>
+            <span><i class="dot warm"></i>虚部 Im ψ</span>
+            <span>両端は壁(ψ = 0)</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qd" data-aspect="0.34" role="img" aria-label="井戸の中で粒子を見つける確率の分布。"></canvas></div>
+          <figcaption><span><i class="dot violet"></i>見つかる確率 |ψ|²</span><span>縦線: 位置の平均 ⟨x⟩</span></figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qb" data-aspect="0.3" role="img" aria-label="各固有状態の混ざり具合を表す棒グラフ。"></canvas></div>
+          <figcaption>各固有状態の割合 |c<sub>n</sub>|²(下の数字は固有エネルギー E<sub>n</sub>)</figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>はじめの状態</span></span>
+          <div class="btns" id="qw-preset">
+            <button class="chip" data-v="0" aria-pressed="false">n = 1</button>
+            <button class="chip" data-v="1" aria-pressed="false">n = 2</button>
+            <button class="chip" data-v="2" aria-pressed="true">1 + 2</button>
+            <button class="chip" data-v="3" aria-pressed="false">1 + 2 + 3</button>
+            <button class="chip" data-v="4" aria-pressed="false">1〜4</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="qw-c1"><span>n = 1 の量</span><output id="qw-c1-v"></output></label>
+          <input type="range" id="qw-c1" min="0" max="1" step="0.05" value="1">
+        </div>
+        <div class="field">
+          <label for="qw-c2"><span>n = 2 の量</span><output id="qw-c2-v"></output></label>
+          <input type="range" id="qw-c2" min="0" max="1" step="0.05" value="1">
+        </div>
+        <div class="field">
+          <label for="qw-c3"><span>n = 3 の量</span><output id="qw-c3-v"></output></label>
+          <input type="range" id="qw-c3" min="0" max="1" step="0.05" value="0">
+        </div>
+        <div class="field">
+          <label for="qw-c4"><span>n = 4 の量</span><output id="qw-c4-v"></output></label>
+          <input type="range" id="qw-c4" min="0" max="1" step="0.05" value="0">
+        </div>
+        <div class="field">
+          <span class="lab"><span>再生速度</span></span>
+          <div class="btns" id="qw-speed">
+            <button class="chip" data-v="0.5" aria-pressed="false">×0.5</button>
+            <button class="chip" data-v="1" aria-pressed="true">×1</button>
+            <button class="chip" data-v="2" aria-pressed="false">×2</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="qw-pause">一時停止</button>
+          <button class="btn" id="qw-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">時刻 t / 復活の周期</span><span class="v" id="qw-t">0</span></div>
+          <div class="meter"><span class="k">位置の平均 ⟨x⟩</span><span class="v" id="qw-x">0</span></div>
+          <div class="meter"><span class="k">エネルギーの平均 ⟨E⟩</span><span class="v" id="qw-e">0</span></div>
+          <div class="meter"><span class="k">確率の振動の周期</span><span class="v" id="qw-p">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>「n = 1」「n = 2」のように固有状態を1つだけ選ぶと、確率の分布は止まって見えます。実部と虚部は回っていますが、2乗すると動きが消えます。これが定常状態です。</li>
+        <li>n 番目の状態は、節(確率がゼロの点)が n − 1 個あります。波長が短いほどエネルギーが高く、E<sub>n</sub> は n² に比例します。</li>
+        <li>複数を混ぜると、成分ごとに位相の進む速さが違うので、確率の山が壁の間を行き来します。「1 + 2」では、周期 2π/(E<sub>2</sub> − E<sub>1</sub>) で振動します。</li>
+        <li>E<sub>n</sub> が n² に比例するため、t = 4/π(右上のメーターで 1.00)のとき、すべての成分の位相がそろい、最初の形に完全に戻ります。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln">φ<sub><i>n</i></sub>(<i>x</i>) = √(2/<i>L</i>) sin(<i>n</i>π<i>x</i>/<i>L</i>),　<i>E<sub>n</sub></i> = <i>n</i>²π²ħ² / (2<i>mL</i>²)</span>
+        <span class="ln">ψ(<i>x</i>, <i>t</i>) = Σ <i>c<sub>n</sub></i> φ<sub><i>n</i></sub>(<i>x</i>) e<sup>−i<i>E<sub>n</sub>t</i>/ħ</sup></span>
+      </div>
+      <p class="foot">ħ = m = L = 1 の単位で計算しています。混ぜる量は、合計が 1 になるよう自動で調整されます。</p>
+    </div>
+  </section>
+
+  <!-- 2. トンネル効果 -->
+  <section class="panel" id="panel-qt" role="tabpanel" aria-labelledby="tab-qt" hidden>
+    <div class="intro">
+      <h2>エネルギーが足りなくても、波は壁の向こうへしみ出す</h2>
+      <p>波束を障壁にぶつけて、シュレーディンガー方程式を時間発展させます。障壁の高さや幅を変えて、通り抜ける割合の変化を見てください。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qt" data-aspect="0.62" role="img" aria-label="障壁に当たる波束。青が確率密度、紫が障壁、緑の破線が波束のエネルギー。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>確率密度 |ψ|²</span>
+            <span><i class="dot violet"></i>障壁の高さ V₀</span>
+            <span><i class="dot green"></i>波束のエネルギー E</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="qt-V"><span>障壁の高さ V₀</span><output id="qt-V-v"></output></label>
+          <input type="range" id="qt-V" min="0" max="8" step="0.5" value="3">
+        </div>
+        <div class="field">
+          <label for="qt-a"><span>障壁の幅 a</span><output id="qt-a-v"></output></label>
+          <input type="range" id="qt-a" min="0.2" max="3" step="0.1" value="1">
+        </div>
+        <div class="field">
+          <label for="qt-k"><span>波束の波数 k(E = k²/2)</span><output id="qt-k-v"></output></label>
+          <input type="range" id="qt-k" min="1" max="4" step="0.1" value="2">
+        </div>
+        <label class="check"><input type="checkbox" id="qt-re">波の実部も表示</label>
+        <div class="field">
+          <span class="lab"><span>再生速度</span></span>
+          <div class="btns" id="qt-speed">
+            <button class="chip" data-v="0.5" aria-pressed="false">×0.5</button>
+            <button class="chip" data-v="1" aria-pressed="true">×1</button>
+            <button class="chip" data-v="2" aria-pressed="false">×2</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="qt-pause">一時停止</button>
+          <button class="btn" id="qt-reset">もう一度発射</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">波束のエネルギー E</span><span class="v" id="qt-E">0</span></div>
+          <div class="meter"><span class="k">E と V₀ の関係</span><span class="v" id="qt-cmp">—</span></div>
+          <div class="meter"><span class="k">透過率(理論)</span><span class="v" id="qt-Tth">0</span></div>
+          <div class="meter"><span class="k">透過(いま)</span><span class="v" id="qt-T">0</span></div>
+          <div class="meter"><span class="k">反射(いま)</span><span class="v" id="qt-R">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>E が V₀ より小さい(古典なら通れない)条件でも、波の一部は障壁の向こうに出ます。障壁の中では、確率密度が指数関数的に減っていきます。</li>
+        <li>障壁を厚くすると、透過率は急激に小さくなります。幅のスライダーをゆっくり動かして、理論値の変化を見てください。</li>
+        <li>E が V₀ より大きい場合でも、一部は反射されます。古典力学では反射はゼロですが、波では境界で必ず反射が起きます。</li>
+        <li>V₀ を 0 にすると、波束はそのまま通り抜けながら、少しずつ広がっていきます。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>E</i> &lt; <i>V</i><sub>0</sub>: <i>T</i> = [ 1 + <i>V</i><sub>0</sub>² sinh²(κ<i>a</i>) / (4<i>E</i>(<i>V</i><sub>0</sub> − <i>E</i>)) ]<sup>−1</sup>,　κ = √(2<i>m</i>(<i>V</i><sub>0</sub> − <i>E</i>)) / ħ</span>
+        <span class="ln"><i>E</i> &gt; <i>V</i><sub>0</sub>: sinh を sin に、κ を <i>k′</i> = √(2<i>m</i>(<i>E</i> − <i>V</i><sub>0</sub>)) / ħ に置き換える</span>
+      </div>
+      <p class="foot">ħ = m = 1 の単位です。理論値は、波束に含まれる波数のばらつきで平均した値です。画面の両端では波を吸収しています。</p>
+    </div>
+  </section>
+
+  <!-- 3. 不確定性 -->
+  <section class="panel" id="panel-qu" role="tabpanel" aria-labelledby="tab-qu" hidden>
+    <div class="intro">
+      <h2>位置を絞るほど、運動量はばらつく</h2>
+      <p>自由に進む粒子のガウス波束です。位置の幅を変えて、運動量の幅と、時間とともに広がる速さを見比べてください。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qu" data-aspect="0.5" role="img" aria-label="自由粒子の波束の位置の確率分布。時間とともに広がる。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>位置の分布 |ψ(x)|²</span>
+            <span>破線: 最初の形</span>
+            <span>横軸は波束の中心から測った位置</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-qk" data-aspect="0.4" role="img" aria-label="運動量の確率分布。時間によらない。"></canvas></div>
+          <figcaption><span><i class="dot warm"></i>運動量の分布 |φ(p)|²</span><span>横軸は中心の運動量からのずれ(時間によらない)</span></figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="qu-s"><span>はじめの位置の幅 σ</span><output id="qu-s-v"></output></label>
+          <input type="range" id="qu-s" min="0.3" max="1.5" step="0.05" value="0.6">
+        </div>
+        <div class="field">
+          <span class="lab"><span>再生速度</span></span>
+          <div class="btns" id="qu-speed">
+            <button class="chip" data-v="0.5" aria-pressed="false">×0.5</button>
+            <button class="chip" data-v="1" aria-pressed="true">×1</button>
+            <button class="chip" data-v="2" aria-pressed="false">×2</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="qu-pause">一時停止</button>
+          <button class="btn" id="qu-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">位置の幅 Δx</span><span class="v" id="qu-dx">0</span></div>
+          <div class="meter"><span class="k">運動量の幅 Δp</span><span class="v" id="qu-dp">0</span></div>
+          <div class="meter"><span class="k">Δx · Δp(下限 0.5)</span><span class="v" id="qu-pr">0</span></div>
+          <div class="meter"><span class="k">広がる時間の目安 2σ²</span><span class="v" id="qu-ts">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>位置の幅 σ を小さくすると、運動量の分布(下の図)が太くなります。波を細い山に押し込むには、さまざまな波長の波を足さなければならないからです。</li>
+        <li>Δx · Δp は、最初は 0.5(= ħ/2)で、ガウス波束が取りうる最小の値です。時間が進むと、位置が広がるので積は大きくなります。</li>
+        <li>運動量の分布は時間が経っても変わりません。自由粒子では運動量が保存するためです。位置だけが広がるのは、速い成分と遅い成分が少しずつずれていくからです。</li>
+        <li>σ が小さい波束ほど、広がるのが速くなります。広がる時間の目安は 2mσ²/ħ です。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln">Δ<i>x</i> · Δ<i>p</i> ≥ ħ/2</span>
+        <span class="ln">Δ<i>x</i>(<i>t</i>) = σ √(1 + (ħ<i>t</i> / 2<i>m</i>σ²)²),　Δ<i>p</i> = ħ / 2σ</span>
+      </div>
+      <p class="foot">ħ = m = 1 の単位です。波束の形は、解析的に求めた厳密な式で描いています。</p>
+    </div>
+  </section>
+
+  <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
+  <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const PI = Math.PI;
+  const TAU = 2 * Math.PI;
+  const MONO = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  const SANS = '12.5px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif';
+  const RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const C = {};
+  const COLOR_KEYS = ['ink', 'ink-2', 'ink-3', 'line', 'grid', 'accent', 'warm', 'green', 'violet', 'stage', 'surface'];
+  let colorSig = '';
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    let sig = '';
+    for (const k of COLOR_KEYS) { C[k] = cs.getPropertyValue('--' + k).trim(); sig += C[k]; }
+    const changed = sig !== colorSig;
+    colorSig = sig;
+    return changed;
+  }
+  function rgb(hex) {
+    const h = hex.replace('#', '');
+    const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    return [parseInt(f.slice(0, 2), 16), parseInt(f.slice(2, 4), 16), parseInt(f.slice(4, 6), 16)];
+  }
+  function fit(cv) {
+    const w = Math.max(200, cv.parentElement.clientWidth);
+    const h = Math.round(w * parseFloat(cv.dataset.aspect));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.height = h + 'px';
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+  function setText(id, s) { const el = $(id); if (el && el.textContent !== s) el.textContent = s; }
+  function bindRange(id, fmtFn, onChange) {
+    const el = $(id), out = $(id + '-v');
+    const upd = () => { out.innerHTML = fmtFn(+el.value); };
+    el.addEventListener('input', () => { upd(); onChange(+el.value); });
+    upd();
+  }
+  function bindChips(groupId, onPick) {
+    const chips = $(groupId).querySelectorAll('.chip');
+    chips.forEach((ch) => {
+      ch.addEventListener('click', () => {
+        chips.forEach((o) => o.setAttribute('aria-pressed', o === ch ? 'true' : 'false'));
+        onPick(parseFloat(ch.dataset.v));
+      });
+    });
+  }
+  function setChip(groupId, v) {
+    $(groupId).querySelectorAll('.chip').forEach((o) => o.setAttribute('aria-pressed', parseFloat(o.dataset.v) === v ? 'true' : 'false'));
+  }
+  function setRange(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event('input')); }
+  function arrow(ctx, x0, y0, x1, y1, col, lw) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 2) return;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const ux = dx / L, uy = dy / L, hl = Math.min(10, L * 0.55), hw = hl * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * hl - uy * hw, y1 - uy * hl + ux * hw);
+    ctx.lineTo(x1 - ux * hl + uy * hw, y1 - uy * hl - ux * hw);
+    ctx.closePath(); ctx.fill();
+  }
+  function setPauseLabel(btnId, paused) { $(btnId).textContent = paused ? '再開' : '一時停止'; }
+  function fmt(x, d) { return (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d); }
+  function niceStep(raw) {
+    const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+  }
+  // 横軸の目盛り(値 v0〜v1 を px0〜px1 に対応させ、y に線を引く)
+  function drawAxisX(ctx, px0, px1, v0, v1, y, step, decimals) {
+    ctx.strokeStyle = C.line; ctx.fillStyle = C['ink-3']; ctx.lineWidth = 1; ctx.font = MONO;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.beginPath(); ctx.moveTo(px0, y); ctx.lineTo(px1, y); ctx.stroke();
+    for (let v = Math.ceil(v0 / step - 1e-9) * step; v <= v1 + 1e-9; v += step) {
+      const x = px0 + (v - v0) / (v1 - v0) * (px1 - px0);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 4); ctx.stroke();
+      ctx.fillText((Math.abs(v) < 1e-9 ? 0 : v).toFixed(decimals), x, y + 6);
+    }
+  }
+
+  // タブ切り替えと描画ループ。modules[name] = { frame(dt), resize(), invalidate() }
+  function startApp(TABS, modules) {
+    let active = TABS[0];
+    function show(name, focus) {
+      active = name;
+      TABS.forEach((nm) => {
+        const sel = nm === name, tb = $('tab-' + nm);
+        tb.setAttribute('aria-selected', sel ? 'true' : 'false');
+        tb.tabIndex = sel ? 0 : -1;
+        $('panel-' + nm).hidden = !sel;
+        if (sel && focus) tb.focus();
+      });
+      modules[name].resize();
+      modules[name].invalidate();
+    }
+    TABS.forEach((nm, i) => {
+      const tb = $('tab-' + nm);
+      tb.addEventListener('click', () => show(nm));
+      tb.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); show(TABS[(i + 1) % TABS.length], true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); show(TABS[(i + TABS.length - 1) % TABS.length], true); }
+      });
+    });
+    const wrapEl = document.querySelector('.wrap');
+    let lastW = 0;
+    function onResize() {
+      const w = wrapEl.clientWidth;
+      if (w === lastW) return;
+      lastW = w;
+      modules[active].resize();
+      modules[active].invalidate();
+    }
+    if (window.ResizeObserver) new ResizeObserver(onResize).observe(wrapEl);
+    window.addEventListener('resize', onResize);
+    let last = 0;
+    function frame(ts) {
+      if (!last) last = ts;
+      const dt = Math.min(0.05, (ts - last) / 1000);
+      last = ts;
+      if (readColors()) modules[active].invalidate();
+      modules[active].frame(dt);
+      requestAnimationFrame(frame);
+    }
+    readColors();
+    lastW = wrapEl.clientWidth;
+    modules[active].resize();
+    requestAnimationFrame(frame);
+  }
+
+  /* PHYSICS-BEGIN */
+  // ---- 無限井戸(ħ = m = 1、幅 1)。固有関数 φ_n = √2 sin(nπx)、E_n = n²π²/2 ----
+  function wellPhi(n, x) { return Math.SQRT2 * Math.sin(n * Math.PI * x); }
+  function wellE(n) { return n * n * Math.PI * Math.PI / 2; }
+  function normAmp(c) {
+    const s = Math.sqrt(c.reduce((a, b) => a + b * b, 0));
+    return s > 0 ? c.map((v) => v / s) : c.slice();
+  }
+  function wellPsi(c, x, t) {
+    let re = 0, im = 0;
+    for (let k = 0; k < c.length; k++) {
+      const n = k + 1, ph = -wellE(n) * t, a = c[k] * wellPhi(n, x);
+      re += a * Math.cos(ph); im += a * Math.sin(ph);
+    }
+    return [re, im];
+  }
+  function wellMeanE(c) { let e = 0; for (let k = 0; k < c.length; k++) e += c[k] * c[k] * wellE(k + 1); return e; }
+
+  // ---- 時間に依存するシュレーディンガー方程式(1次元、ħ = m = 1)。R + iI を交互に進める蛙跳び法 ----
+  // R は時刻 t、I は t + dt/2 に置く。確率密度は R² + I(t+dt/2) I(t−dt/2)。
+  function tdseMake(N, dx, dt) {
+    return { N: N, dx: dx, dt: dt, R: new Float64Array(N), I: new Float64Array(N), Iold: new Float64Array(N),
+      V: new Float64Array(N), mask: new Float64Array(N).fill(1), t: 0, lossL: 0, lossR: 0 };
+  }
+  // 運動エネルギー項は 4 次精度の差分(−1/2 f'' を 5 点で近似)
+  function tdseH(s, f, i) {
+    const c = 0.5 / (12 * s.dx * s.dx);
+    return -c * (-f[i + 2] + 16 * f[i + 1] - 30 * f[i] + 16 * f[i - 1] - f[i - 2]) + s.V[i] * f[i];
+  }
+  function tdseGauss(s, x0, k0, sig) {
+    const N = s.N, a = Math.pow(2 * Math.PI * sig * sig, -0.25), R0 = new Float64Array(N), I0 = new Float64Array(N);
+    for (let i = 0; i < N; i++) {
+      const x = i * s.dx, g = a * Math.exp(-(x - x0) * (x - x0) / (4 * sig * sig));
+      R0[i] = g * Math.cos(k0 * x); I0[i] = g * Math.sin(k0 * x);
+    }
+    for (let i = 2; i < N - 2; i++) {
+      const h = tdseH(s, R0, i);
+      s.R[i] = R0[i]; s.I[i] = I0[i] - 0.5 * s.dt * h; s.Iold[i] = I0[i] + 0.5 * s.dt * h;
+    }
+    s.t = 0; s.lossL = 0; s.lossR = 0;
+  }
+  function tdseStep(s) {
+    const N = s.N, R = s.R, I = s.I, dt = s.dt, m = s.mask;
+    for (let i = 2; i < N - 2; i++) R[i] += dt * tdseH(s, I, i);
+    s.Iold.set(I);
+    for (let i = 2; i < N - 2; i++) I[i] -= dt * tdseH(s, R, i);
+    // 画面の端で吸収した確率は、左端・右端ごとに積算しておく(反射・透過の集計に使う)
+    for (let i = 0; i < N; i++) {
+      const f = m[i];
+      if (f !== 1) {
+        const d = R[i] * R[i] + I[i] * s.Iold[i];
+        if (i < N / 2) s.lossL += d * (1 - f * f) * s.dx; else s.lossR += d * (1 - f * f) * s.dx;
+        R[i] *= f; I[i] *= f; s.Iold[i] *= f;
+      }
+    }
+    s.t += dt;
+  }
+  function tdseDensity(s, i) { return s.R[i] * s.R[i] + s.I[i] * s.Iold[i]; }
+  // 長方形障壁(高さ V0、幅 a)に平面波(波数 k)が当たるときの透過率
+  function barrierT(k, V0, a) {
+    const E = 0.5 * k * k;
+    if (V0 <= 0 || a <= 0) return 1;
+    if (Math.abs(E - V0) < 1e-9) { const q = a * k; return 1 / (1 + q * q / 4); }
+    if (E < V0) {
+      const kap = Math.sqrt(2 * (V0 - E)), sh = Math.sinh(kap * a);
+      return 1 / (1 + V0 * V0 * sh * sh / (4 * E * (V0 - E)));
+    }
+    const kp = Math.sqrt(2 * (E - V0)), sn = Math.sin(kp * a);
+    return 1 / (1 + V0 * V0 * sn * sn / (4 * E * (E - V0)));
+  }
+  // 位置の幅 sig のガウス波束(運動量の中心 k0)について、透過率を運動量分布で平均した値
+  function barrierTavg(k0, sig, V0, a) {
+    const sk = 1 / (2 * sig); let sw = 0, st = 0;
+    for (let j = -60; j <= 60; j++) {
+      const k = k0 + sk * j / 15;
+      if (k <= 0.02) continue;
+      const w = Math.exp(-(k - k0) * (k - k0) / (2 * sk * sk));
+      sw += w; st += w * barrierT(k, V0, a);
+    }
+    return st / sw;
+  }
+  // ---- 自由粒子のガウス波束(ħ = m = 1)。位置の標準偏差は √(1 + (t/2σ²)²) 倍に広がる ----
+  function gaussSigma(sig, t) { return sig * Math.sqrt(1 + Math.pow(t / (2 * sig * sig), 2)); }
+  function gaussDensity(sig, t, x) {
+    const s = gaussSigma(sig, t);
+    return Math.exp(-x * x / (2 * s * s)) / (s * Math.sqrt(2 * Math.PI));
+  }
+  /* PHYSICS-END */
+
+  /* ---------- 1. 井戸と重ね合わせ ---------- */
+  const QW = (function () {
+    const RATE = 0.35;
+    const cW = $('cv-qw'), cD = $('cv-qd'), cBr = $('cv-qb');
+    let a, b, d, sa = { w: 0, h: 0 }, sb = { w: 0, h: 0 }, sd = { w: 0, h: 0 };
+    let t = 0, paused = RM, speed = 1, amp = [1, 0, 0, 0], suppress = false;
+    const PRESETS = [[1, 0, 0, 0], [0, 1, 0, 0], [1, 1, 0, 0], [1, 1, 1, 0], [1, 1, 1, 1]];
+    const MX = 14, NPT = 240;
+    let dirty = true;
+
+    function raw() { return [1, 2, 3, 4].map((n) => +$('qw-c' + n).value); }
+    function update() {
+      const r = raw();
+      amp = r.some((v) => v > 0) ? normAmp(r) : [1, 0, 0, 0];
+    }
+    function stats() {
+      let mx = 0, M = 160;
+      for (let i = 0; i < M; i++) { const x = (i + 0.5) / M, p = wellPsi(amp, x, t); mx += x * (p[0] * p[0] + p[1] * p[1]) / M; }
+      return mx;
+    }
+    function meters(mx) {
+      const Trev = 4 / PI;
+      setText('qw-t', (t / Trev).toFixed(2));
+      setText('qw-x', mx.toFixed(3));
+      setText('qw-e', wellMeanE(amp).toFixed(2));
+      const idx = []; amp.forEach((v, i) => { if (v * v > 0.01) idx.push(i + 1); });
+      setText('qw-p', idx.length >= 2 ? (2 * PI / (wellE(idx[1]) - wellE(idx[0]))).toFixed(3) : '—');
+    }
+    function drawWave() {
+      const W = sa.w, H = sa.h, x0 = MX, x1 = W - MX, X = (x) => x0 + x * (x1 - x0), y0 = H / 2, S = 0.2 * H;
+      a.clearRect(0, 0, W, H); a.fillStyle = C.stage; a.fillRect(0, 0, W, H);
+      a.strokeStyle = C.line; a.lineWidth = 1; a.beginPath(); a.moveTo(x0, y0); a.lineTo(x1, y0); a.stroke();
+      a.strokeStyle = C['ink-2']; a.lineWidth = 3; a.beginPath(); a.moveTo(x0, 8); a.lineTo(x0, H - 8); a.moveTo(x1, 8); a.lineTo(x1, H - 8); a.stroke();
+      const line = (k, col) => {
+        a.strokeStyle = col; a.lineWidth = 2; a.lineJoin = 'round'; a.beginPath();
+        for (let i = 0; i <= NPT; i++) { const x = i / NPT, p = wellPsi(amp, x, t); const Y = y0 - p[k] * S; if (i) a.lineTo(X(x), Y); else a.moveTo(X(x), Y); }
+        a.stroke();
+      };
+      line(1, C.warm); line(0, C.accent);
+    }
+    function drawDensity(mx) {
+      const W = sd.w, H = sd.h, x0 = MX, x1 = W - MX, X = (x) => x0 + x * (x1 - x0), yb = H - 22, S = (H - 34) / 3.6;
+      d.clearRect(0, 0, W, H); d.fillStyle = C.stage; d.fillRect(0, 0, W, H);
+      const pts = [];
+      for (let i = 0; i <= NPT; i++) { const x = i / NPT, p = wellPsi(amp, x, t); pts.push([X(x), yb - (p[0] * p[0] + p[1] * p[1]) * S]); }
+      d.fillStyle = C.violet; d.globalAlpha = 0.25; d.beginPath(); d.moveTo(x0, yb);
+      pts.forEach((p) => d.lineTo(p[0], p[1])); d.lineTo(x1, yb); d.closePath(); d.fill(); d.globalAlpha = 1;
+      d.strokeStyle = C.violet; d.lineWidth = 2; d.beginPath(); pts.forEach((p, i) => { if (i) d.lineTo(p[0], p[1]); else d.moveTo(p[0], p[1]); }); d.stroke();
+      d.setLineDash([4, 4]); d.strokeStyle = C['ink-3']; d.lineWidth = 1.2; d.beginPath(); d.moveTo(X(mx), 6); d.lineTo(X(mx), yb); d.stroke(); d.setLineDash([]);
+      drawAxisX(d, x0, x1, 0, 1, yb, 0.25, 2);
+    }
+    function drawBars() {
+      const W = sb.w, H = sb.h;
+      b.clearRect(0, 0, W, H); b.fillStyle = C.stage; b.fillRect(0, 0, W, H);
+      const n = 4, slot = (W - 2 * MX) / n, bw = Math.min(46, slot * 0.5), yb = H - 34, S = H - 52;
+      for (let k = 0; k < n; k++) {
+        const pr = amp[k] * amp[k], cx = MX + slot * (k + 0.5);
+        b.fillStyle = C.accent; b.globalAlpha = 0.85; b.fillRect(cx - bw / 2, yb - pr * S, bw, Math.max(1, pr * S)); b.globalAlpha = 1;
+        b.fillStyle = C.ink; b.font = MONO; b.textAlign = 'center'; b.textBaseline = 'bottom';
+        b.fillText(Math.round(pr * 100) + '%', cx, yb - pr * S - 3);
+        b.fillStyle = C['ink-2']; b.textBaseline = 'top';
+        b.fillText('n=' + (k + 1), cx, yb + 4); b.fillStyle = C['ink-3']; b.fillText('E=' + wellE(k + 1).toFixed(1), cx, yb + 18);
+      }
+      b.strokeStyle = C.line; b.lineWidth = 1; b.beginPath(); b.moveTo(MX, yb); b.lineTo(W - MX, yb); b.stroke();
+    }
+    function draw() { const mx = stats(); drawWave(); drawDensity(mx); drawBars(); meters(mx); }
+
+    [1, 2, 3, 4].forEach((n) => bindRange('qw-c' + n, (v) => v.toFixed(2), () => { update(); if (!suppress) setChip('qw-preset', -1); dirty = true; }));
+    bindChips('qw-preset', (v) => {
+      suppress = true;
+      PRESETS[v].forEach((val, i) => setRange('qw-c' + (i + 1), val));
+      suppress = false;
+      update(); dirty = true;
+    });
+    bindChips('qw-speed', (v) => { speed = v; });
+    $('qw-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('qw-pause', paused); });
+    $('qw-reset').addEventListener('click', () => { t = 0; dirty = true; });
+    setPauseLabel('qw-pause', paused);
+    update();
+
+    function resize() {
+      const A = fit(cW); a = A.ctx; sa = A; const D = fit(cD); d = D.ctx; sd = D; const B = fit(cBr); b = B.ctx; sb = B; dirty = true;
+    }
+    function frame(dt) { if (!paused) { t += dt * RATE * speed; dirty = true; } if (dirty) { dirty = false; draw(); } }
+    function invalidate() { dirty = true; }
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 2. トンネル効果 ---------- */
+  const QT = (function () {
+    const N = 600, DX = 0.1, DT = 0.004, XB = 30, SIG = 2, X0 = 16, EDGE = 80, SPS = 840;
+    const cv = $('cv-qt');
+    let c, W = 0, H = 0, s, acc = 0, paused = RM, speed = 1;
+    let V0 = 3, aw = 1, k0 = 2, showRe = false, Tth = 0;
+
+    function reset() {
+      s = tdseMake(N, DX, DT); acc = 0;
+      for (let i = 0; i < N; i++) { const x = i * DX; s.V[i] = (x >= XB - aw / 2 && x < XB + aw / 2) ? V0 : 0; }
+      for (let i = 0; i < EDGE; i++) { const f = 1 - 0.02 * Math.pow((EDGE - i) / EDGE, 2); s.mask[i] = f; s.mask[N - 1 - i] = f; }
+      tdseGauss(s, X0, k0, SIG);
+      Tth = barrierTavg(k0, SIG, V0, aw);
+      const E = 0.5 * k0 * k0;
+      setText('qt-E', E.toFixed(2));
+      setText('qt-cmp', V0 === 0 ? 'V₀ = 0' : (E < V0 ? 'E < V₀' : E > V0 ? 'E > V₀' : 'E = V₀'));
+      setText('qt-Tth', (100 * Tth).toFixed(1) + ' %');
+    }
+    function measure() {
+      let T = 0, R = 0, P = 0;
+      for (let i = 0; i < N; i++) {
+        const d = tdseDensity(s, i) * DX, x = i * DX;
+        if (x > XB + aw / 2) T += d; else if (x < XB - aw / 2) R += d; else P += d;
+      }
+      T += s.lossR; R += s.lossL;   // 端で吸収された分も数える
+      const tot = T + R + P;
+      return [T / tot, R / tot];
+    }
+    function draw() {
+      const m = measure();
+      setText('qt-T', (100 * m[0]).toFixed(1) + ' %');
+      setText('qt-R', (100 * m[1]).toFixed(1) + ' %');
+      c.clearRect(0, 0, W, H); c.fillStyle = C.stage; c.fillRect(0, 0, W, H);
+      const L = N * DX, X = (x) => x / L * W, yb = 0.82 * H, Vs = 0.74 * H / 8, Ds = 0.5 * H / 0.2;
+      // 吸収領域
+      c.fillStyle = C['ink-3']; c.globalAlpha = 0.1; c.fillRect(0, 0, X(EDGE * DX), H); c.fillRect(X(L - EDGE * DX), 0, X(EDGE * DX), H); c.globalAlpha = 1;
+      c.fillStyle = C['ink-3']; c.font = MONO; c.textAlign = 'left'; c.textBaseline = 'top'; c.fillText('吸収', 6, 6);
+      c.textAlign = 'right'; c.fillText('吸収', W - 6, 6);
+      // 障壁
+      if (V0 > 0) {
+        c.fillStyle = C.violet; c.globalAlpha = 0.3; c.fillRect(X(XB - aw / 2), yb - V0 * Vs, X(aw), V0 * Vs); c.globalAlpha = 1;
+        c.strokeStyle = C.violet; c.lineWidth = 1.5; c.strokeRect(X(XB - aw / 2), yb - V0 * Vs, X(aw), V0 * Vs);
+      }
+      c.strokeStyle = C.line; c.lineWidth = 1; c.beginPath(); c.moveTo(0, yb); c.lineTo(W, yb); c.stroke();
+      // エネルギー
+      const E = 0.5 * k0 * k0;
+      c.setLineDash([6, 4]); c.strokeStyle = C.green; c.lineWidth = 1.6; c.beginPath(); c.moveTo(0, yb - E * Vs); c.lineTo(W, yb - E * Vs); c.stroke(); c.setLineDash([]);
+      c.fillStyle = C.green; c.textAlign = 'left'; c.textBaseline = 'bottom'; c.fillText('E', W * 0.45, yb - E * Vs - 2);
+      // 確率密度
+      c.beginPath(); c.moveTo(0, yb);
+      for (let i = 0; i < N; i++) c.lineTo(X(i * DX), yb - tdseDensity(s, i) * Ds);
+      c.lineTo(W, yb); c.closePath(); c.fillStyle = C.accent; c.globalAlpha = 0.28; c.fill(); c.globalAlpha = 1;
+      c.strokeStyle = C.accent; c.lineWidth = 1.8; c.lineJoin = 'round'; c.beginPath();
+      for (let i = 0; i < N; i++) { const Y = yb - tdseDensity(s, i) * Ds; if (i) c.lineTo(X(i * DX), Y); else c.moveTo(X(i * DX), Y); }
+      c.stroke();
+      if (showRe) {
+        c.strokeStyle = C.warm; c.lineWidth = 1.2; c.globalAlpha = 0.9; c.beginPath();
+        for (let i = 0; i < N; i++) { const Y = yb - s.R[i] * (0.14 * H / 0.45); if (i) c.lineTo(X(i * DX), Y); else c.moveTo(X(i * DX), Y); }
+        c.stroke(); c.globalAlpha = 1;
+      }
+      c.fillStyle = C['ink-3']; c.textAlign = 'right'; c.textBaseline = 'bottom'; c.fillText('V₀ = ' + V0.toFixed(1) + '  a = ' + aw.toFixed(1), W - 8, H - 4);
+    }
+    function advance(dt) {
+      acc += dt * SPS * speed;
+      let n = Math.min(80, Math.floor(acc)); acc -= Math.floor(acc);
+      while (n-- > 0) tdseStep(s);
+    }
+    bindRange('qt-V', (v) => v.toFixed(1), (v) => { V0 = v; reset(); });
+    bindRange('qt-a', (v) => v.toFixed(1), (v) => { aw = v; reset(); });
+    bindRange('qt-k', (v) => v.toFixed(1), (v) => { k0 = v; reset(); });
+    $('qt-re').addEventListener('change', (e) => { showRe = e.target.checked; });
+    bindChips('qt-speed', (v) => { speed = v; });
+    $('qt-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('qt-pause', paused); });
+    $('qt-reset').addEventListener('click', reset);
+    setPauseLabel('qt-pause', paused);
+
+    function resize() { const r = fit(cv); c = r.ctx; W = r.w; H = r.h; }
+    function frame(dt) { if (!paused) advance(dt); draw(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 3. 不確定性 ---------- */
+  const QU = (function () {
+    const RATE = 0.5, KMAX = 5.8;
+    const cX = $('cv-qu'), cK = $('cv-qk');
+    let a, b, sa = { w: 0, h: 0 }, sb = { w: 0, h: 0 };
+    let sig = 0.6, t = 0, hold = 0, paused = RM, speed = 1;
+    function tEnd() { return Math.min(3 * 2 * sig * sig, 10); }
+    function xRange() { return 3.5 * gaussSigma(sig, tEnd()); }
+    function reset() { t = 0; hold = 0; }
+    function draw() {
+      const R = xRange(), peak0 = 1 / (sig * Math.sqrt(TAU)) * 1.15;
+      {
+        const W = sa.w, H = sa.h, x0 = 14, x1 = W - 14, yb = H - 26, S = (yb - 12) / peak0, N = 220;
+        a.clearRect(0, 0, W, H); a.fillStyle = C.stage; a.fillRect(0, 0, W, H);
+        const Y = (x, tt) => yb - gaussDensity(sig, tt, x) * S, X = (x) => x0 + (x + R) / (2 * R) * (x1 - x0);
+        a.setLineDash([4, 4]); a.strokeStyle = C['ink-3']; a.lineWidth = 1.2; a.beginPath();
+        for (let i = 0; i <= N; i++) { const x = -R + 2 * R * i / N; if (i) a.lineTo(X(x), Y(x, 0)); else a.moveTo(X(x), Y(x, 0)); }
+        a.stroke(); a.setLineDash([]);
+        a.beginPath(); a.moveTo(X(-R), yb);
+        for (let i = 0; i <= N; i++) { const x = -R + 2 * R * i / N; a.lineTo(X(x), Y(x, t)); }
+        a.lineTo(X(R), yb); a.closePath(); a.fillStyle = C.accent; a.globalAlpha = 0.28; a.fill(); a.globalAlpha = 1;
+        a.strokeStyle = C.accent; a.lineWidth = 2; a.beginPath();
+        for (let i = 0; i <= N; i++) { const x = -R + 2 * R * i / N; if (i) a.lineTo(X(x), Y(x, t)); else a.moveTo(X(x), Y(x, t)); }
+        a.stroke();
+        // ±Δx の目印
+        const st = gaussSigma(sig, t);
+        a.strokeStyle = C.violet; a.lineWidth = 2;
+        a.beginPath(); a.moveTo(X(-st), yb - 8); a.lineTo(X(st), yb - 8); a.moveTo(X(-st), yb - 12); a.lineTo(X(-st), yb - 4); a.moveTo(X(st), yb - 12); a.lineTo(X(st), yb - 4); a.stroke();
+        drawAxisX(a, x0, x1, -R, R, yb, niceStep(R / 2), R < 3 ? 1 : 0);
+      }
+      {
+        const W = sb.w, H = sb.h, x0 = 14, x1 = W - 14, yb = H - 26, sk = 1 / (2 * sig), pk = 1.3, S = (yb - 12) / pk, N = 220;
+        b.clearRect(0, 0, W, H); b.fillStyle = C.stage; b.fillRect(0, 0, W, H);
+        const X = (k) => x0 + (k + KMAX) / (2 * KMAX) * (x1 - x0), Yk = (k) => yb - Math.exp(-k * k / (2 * sk * sk)) / (sk * Math.sqrt(TAU)) * S;
+        b.beginPath(); b.moveTo(X(-KMAX), yb);
+        for (let i = 0; i <= N; i++) { const k = -KMAX + 2 * KMAX * i / N; b.lineTo(X(k), Yk(k)); }
+        b.lineTo(X(KMAX), yb); b.closePath(); b.fillStyle = C.warm; b.globalAlpha = 0.28; b.fill(); b.globalAlpha = 1;
+        b.strokeStyle = C.warm; b.lineWidth = 2; b.beginPath();
+        for (let i = 0; i <= N; i++) { const k = -KMAX + 2 * KMAX * i / N; if (i) b.lineTo(X(k), Yk(k)); else b.moveTo(X(k), Yk(k)); }
+        b.stroke();
+        b.strokeStyle = C.violet; b.lineWidth = 2; b.beginPath(); b.moveTo(X(-sk), yb - 8); b.lineTo(X(sk), yb - 8); b.moveTo(X(-sk), yb - 12); b.lineTo(X(-sk), yb - 4); b.moveTo(X(sk), yb - 12); b.lineTo(X(sk), yb - 4); b.stroke();
+        drawAxisX(b, x0, x1, -KMAX, KMAX, yb, 2, 0);
+      }
+      const dx = gaussSigma(sig, t), dp = 1 / (2 * sig);
+      setText('qu-dx', dx.toFixed(3)); setText('qu-dp', dp.toFixed(3)); setText('qu-pr', (dx * dp).toFixed(3)); setText('qu-ts', (2 * sig * sig).toFixed(2));
+    }
+    bindRange('qu-s', (v) => v.toFixed(2), (v) => { sig = v; reset(); });
+    bindChips('qu-speed', (v) => { speed = v; });
+    $('qu-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('qu-pause', paused); });
+    $('qu-reset').addEventListener('click', reset);
+    setPauseLabel('qu-pause', paused);
+    function resize() { const A = fit(cX); a = A.ctx; sa = A; const B = fit(cK); b = B.ctx; sb = B; }
+    function frame(dt) {
+      if (!paused) {
+        if (hold > 0) { hold -= dt; if (hold <= 0) reset(); }
+        else { t += dt * RATE * speed; if (t >= tEnd()) { t = tEnd(); hold = 1.2; } }
+      }
+      draw();
+    }
+    function invalidate() {}
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  startApp(['qw', 'qt', 'qu'], { qw: QW, qt: QT, qu: QU });
+})();
+</script>
+</body></html>

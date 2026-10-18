@@ -167,6 +167,10 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
 
 .eyebrow a { color: var(--accent); text-decoration: none; }
 .eyebrow a:hover { text-decoration: underline; }
+.sitenav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding-top: 4px; border-top: 1px solid var(--line); }
+.sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
+.sitenav a:hover { color: var(--accent); text-decoration: underline; }
+.sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -439,6 +443,7 @@ input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var
   </section>
 
   <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
+  <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
 </div>
 
 <script>

@@ -1,0 +1,882 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>熱・統計力学ラボ | SimPhys</title>
+<meta name="description" content="気体分子の運動とマクスウェル分布、イジング模型の相転移、エントロピー増大を動かして確かめる、学部熱・統計力学のシミュレーション。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* 基本リセット(単体ページ用) */
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { margin: 0; }
+[hidden] { display: none !important; }
+/* Layout: 実験ノートのような1カラム。上に分野タブ、下に「画面 → 操作 → 読み取り方」の順。広い画面では画面と操作を横に並べる。
+   Color: 青みのある灰色の紙面に、青(A・速度)、橙(B・コリオリ力)、緑(遠心力)、紫(目印)を測定色として使う。
+   Type: 本文は Zen Kaku Gothic New、数値は IBM Plex Mono。 */
+:root {
+  --bg: #EEF2F7;
+  --surface: #FFFFFF;
+  --stage: #F6F8FB;
+  --ink: #142033;
+  --ink-2: #4B5D75;
+  --ink-3: #7A8BA1;
+  --line: #D3DBE6;
+  --grid: #E4EAF2;
+  --accent: #2457D6;
+  --accent-ink: #FFFFFF;
+  --warm: #D9620F;
+  --green: #148A66;
+  --violet: #7B45C9;
+  --focus: #2457D6;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Sans", "Noto Sans JP", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1622;
+    --surface: #16212F;
+    --stage: #111B28;
+    --ink: #E7EEF7;
+    --ink-2: #A3B4C8;
+    --ink-3: #74879E;
+    --line: #2A3A4E;
+    --grid: #1F2D3F;
+    --accent: #6F9CFF;
+    --accent-ink: #0E1622;
+    --warm: #FF9B52;
+    --green: #4DD0A3;
+    --violet: #B994FF;
+    --focus: #8DB2FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1622;
+  --surface: #16212F;
+  --stage: #111B28;
+  --ink: #E7EEF7;
+  --ink-2: #A3B4C8;
+  --ink-3: #74879E;
+  --line: #2A3A4E;
+  --grid: #1F2D3F;
+  --accent: #6F9CFF;
+  --accent-ink: #0E1622;
+  --warm: #FF9B52;
+  --green: #4DD0A3;
+  --violet: #B994FF;
+  --focus: #8DB2FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.75;
+  padding-block: 20px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+h1, h2, h3, p, ul, figure { margin: 0; }
+.wrap { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; gap: 20px; }
+
+.head { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; color: var(--ink-2); }
+h1 { font-size: 30px; line-height: 1.3; font-weight: 700; letter-spacing: 0.02em; text-wrap: balance; }
+.lede { color: var(--ink-2); max-width: 40em; }
+
+.tabs {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+}
+.tab {
+  font: inherit; font-weight: 500; line-height: 1.3; color: var(--ink-2); background: transparent;
+  border: 0; border-radius: 7px; padding: 10px 4px; cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-ink); }
+.tab:focus-visible, .btn:focus-visible, .chip:focus-visible, input:focus-visible, canvas:focus-visible {
+  outline: 2px solid var(--focus); outline-offset: 2px;
+}
+
+.panel { display: flex; flex-direction: column; gap: 18px; }
+.intro { display: flex; flex-direction: column; gap: 6px; }
+h2 { font-size: 20px; line-height: 1.45; font-weight: 700; text-wrap: balance; }
+.intro p { color: var(--ink-2); max-width: 42em; }
+
+.stage-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (min-width: 820px) {
+  .stage-grid { grid-template-columns: minmax(0, 1.45fr) minmax(260px, 1fr); }
+}
+.figs { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.figs.pair { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.fig { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fig figcaption {
+  font-size: 12.5px; line-height: 1.5; color: var(--ink-2);
+  display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: center;
+}
+.cv { border: 1px solid var(--line); border-radius: 10px; background: var(--stage); overflow: hidden; }
+.cv canvas { display: block; width: 100%; }
+.cv canvas.touchable { touch-action: none; cursor: crosshair; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 5px; }
+.dot.accent { background: var(--accent); }
+.dot.warm { background: var(--warm); }
+.dot.green { background: var(--green); }
+.dot.violet { background: var(--violet); }
+
+.ctrl {
+  display: flex; flex-direction: column; gap: 14px; min-width: 0;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px;
+}
+.ctrl.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px 22px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field label, .field .lab { font-size: 13px; color: var(--ink-2); display: flex; justify-content: space-between; gap: 8px; }
+.field output { font-family: var(--font-mono); font-size: 13px; color: var(--ink); }
+input[type="range"] { width: 100%; height: 28px; margin: 0; accent-color: var(--accent); }
+input[type="checkbox"] { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
+.check, .field label.check { display: flex; justify-content: flex-start; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-2); }
+.btns { display: flex; flex-wrap: wrap; gap: 8px; }
+.btn, .chip {
+  font: inherit; font-size: 13px; line-height: 1.2; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer;
+}
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+
+.meters { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 8px; }
+.meter { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; background: var(--stage); border-radius: 8px; min-width: 0; }
+.meter .k { font-size: 11.5px; line-height: 1.4; color: var(--ink-3); }
+.meter .v { font-family: var(--font-mono); font-size: 14px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+.read { display: flex; flex-direction: column; gap: 12px; max-width: 46em; }
+.read h3 { font-size: 15px; font-weight: 700; }
+.read ul { padding-left: 1.2em; display: flex; flex-direction: column; gap: 8px; }
+.read li::marker { color: var(--ink-3); }
+.eq {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px;
+  padding: 10px 12px; overflow-x: auto; font-size: 13.5px; line-height: 2;
+}
+.eq .ln { display: block; white-space: nowrap; }
+.eq i { font-style: italic; }
+.foot { font-size: 12px; color: var(--ink-3); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+.eyebrow a { color: var(--accent); text-decoration: none; }
+.eyebrow a:hover { text-decoration: underline; }
+.sitenav { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; padding-top: 4px; border-top: 1px solid var(--line); }
+.sitenav a { color: var(--ink-2); text-decoration: none; padding: 6px 0; }
+.sitenav a:hover { color: var(--accent); text-decoration: underline; }
+.sitenav a:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow"><a href="index.html">← SimPhys ホーム</a>　学部物理 / 熱・統計力学 · 試作</p>
+    <h1>熱・統計力学ラボ</h1>
+    <p class="lede">温度や圧力、エントロピーは、粒子が多数集まって初めて現れる量です。気体、イジング模型、混ざり合いの3つを、粒子の動きから確かめます。</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="シミュレーションの選択">
+    <button class="tab" role="tab" id="tab-tg" aria-controls="panel-tg" aria-selected="true" tabindex="0">気体</button>
+    <button class="tab" role="tab" id="tab-ti" aria-controls="panel-ti" aria-selected="false" tabindex="-1">イジング模型</button>
+    <button class="tab" role="tab" id="tab-te" aria-controls="panel-te" aria-selected="false" tabindex="-1">エントロピー</button>
+  </div>
+
+  <!-- 1. 気体 -->
+  <section class="panel" id="panel-tg" role="tabpanel" aria-labelledby="tab-tg">
+    <div class="intro">
+      <h2>温度と圧力は、粒子の衝突から生まれる</h2>
+      <p>硬い円盤が箱の中を飛び回り、壁や互いにぶつかります。全員を同じ速さで出発させても、衝突を重ねるうちに速さの分布が決まった形に落ち着きます。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-tg" data-aspect="0.6" role="img" aria-label="箱の中を動き回る円盤状の粒子。色が速さを表す。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>遅い</span>
+            <span><i class="dot warm"></i>速い</span>
+            <span>右端の斜線の壁は、動かせる壁です</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-th" data-aspect="0.5" role="img" aria-label="粒子の速さのヒストグラムと、マクスウェル分布の曲線。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>粒子の速さの分布(時間平均)</span>
+            <span><i class="dot warm"></i>マクスウェル分布(理論)</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <span class="lab"><span>はじめの速さ</span></span>
+          <div class="btns" id="tg-init">
+            <button class="chip" data-v="0" aria-pressed="true">全員同じ</button>
+            <button class="chip" data-v="1" aria-pressed="false">2種類</button>
+          </div>
+        </div>
+        <div class="field">
+          <label for="tg-n"><span>粒子の数 N</span><output id="tg-n-v"></output></label>
+          <input type="range" id="tg-n" min="20" max="150" step="10" value="100">
+        </div>
+        <div class="field">
+          <label for="tg-w"><span>箱の幅(壁を動かす)</span><output id="tg-w-v"></output></label>
+          <input type="range" id="tg-w" min="10" max="20" step="0.5" value="20">
+        </div>
+        <div class="field">
+          <span class="lab"><span>温度を変える</span></span>
+          <div class="btns">
+            <button class="btn" id="tg-heat">加熱</button>
+            <button class="btn" id="tg-cool">冷却</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>再生速度</span></span>
+          <div class="btns" id="tg-speed">
+            <button class="chip" data-v="1" aria-pressed="true">×1</button>
+            <button class="chip" data-v="2" aria-pressed="false">×2</button>
+            <button class="chip" data-v="4" aria-pressed="false">×4</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="tg-pause">一時停止</button>
+          <button class="btn" id="tg-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">温度 kT(平均の運動エネルギー)</span><span class="v" id="tg-kt">0</span></div>
+          <div class="meter"><span class="k">圧力 P(壁への衝撃から)</span><span class="v" id="tg-p">計測中</span></div>
+          <div class="meter"><span class="k">理想気体の値 N kT / 面積</span><span class="v" id="tg-pid">0</span></div>
+          <div class="meter"><span class="k">P ÷ 理想気体の値</span><span class="v" id="tg-r">—</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>「全員同じ」で始めると、最初のヒストグラムは1本の柱です。衝突でエネルギーが受け渡されるうちに、橙のマクスウェル分布の形に近づいていきます。「2種類」でも、同じ形に落ち着きます。</li>
+        <li>温度は平均の運動エネルギーです。「加熱」を押すと、全員の速さが上がり、分布が右へずれて広がります。同時に圧力も上がります。</li>
+        <li>箱の幅を縮めると、温度はそのままで圧力が上がります。圧力が体積に反比例する、ボイルの法則です。「P ÷ 理想気体の値」はほぼ 1 のままです。</li>
+        <li>この比が 1 より少し大きいのは、円盤に大きさがあり、粒子が動ける面積が実質的に減るためです。粒子の数を増やすか、幅を縮めると、ずれが大きくなります。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>kT</i> = <i>m</i>⟨<i>v</i>²⟩ / 2　(2次元)</span>
+        <span class="ln"><i>f</i>(<i>v</i>) = (<i>m v</i> / <i>kT</i>) exp(−<i>m v</i>² / 2<i>kT</i>)</span>
+        <span class="ln"><i>P</i> = <i>N kT</i> / <i>A</i>　(2次元の理想気体)</span>
+      </div>
+      <p class="foot">質量 m = 1、ボルツマン定数 k = 1 の単位で、2次元の気体を計算しています。圧力は、壁が受けた運動量を、直近の時間と壁の長さで割って求めています。</p>
+    </div>
+  </section>
+
+  <!-- 2. イジング模型 -->
+  <section class="panel" id="panel-ti" role="tabpanel" aria-labelledby="tab-ti" hidden>
+    <div class="intro">
+      <h2>温度を下げると、スピンが一斉に同じ向きを選ぶ</h2>
+      <p>上向きか下向きのスピンが格子の上に並び、隣と同じ向きになると得をします。熱ゆらぎとのせめぎ合いが、ある温度で劇的に変わります。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-ti" data-aspect="1" role="img" aria-label="上向きと下向きのスピンが並ぶ格子。橙が上向き、青が下向き。"></canvas></div>
+          <figcaption>
+            <span><i class="dot warm"></i>上向き</span>
+            <span><i class="dot accent"></i>下向き</span>
+            <span>48 × 48 の格子(端はつながっています)</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-tm" data-aspect="0.55" role="img" aria-label="温度と磁化の関係。厳密解の曲線と、シミュレーションの現在値。"></canvas></div>
+          <figcaption>
+            <span>曲線: 厳密解(外場なし)</span>
+            <span><i class="dot accent"></i>いまの |M|</span>
+            <span><i class="dot warm"></i>平均した |M|</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="ti-T"><span>温度 T</span><output id="ti-T-v"></output></label>
+          <input type="range" id="ti-T" min="1" max="4" step="0.05" value="3">
+        </div>
+        <div class="field">
+          <label for="ti-h"><span>外から加える磁場 h</span><output id="ti-h-v"></output></label>
+          <input type="range" id="ti-h" min="-0.5" max="0.5" step="0.05" value="0">
+        </div>
+        <div class="field">
+          <span class="lab"><span>はじめの向き</span></span>
+          <div class="btns" id="ti-init">
+            <button class="chip" data-v="0" aria-pressed="true">ばらばら</button>
+            <button class="chip" data-v="1" aria-pressed="false">全部上向き</button>
+          </div>
+        </div>
+        <div class="field">
+          <span class="lab"><span>再生速度</span></span>
+          <div class="btns" id="ti-speed">
+            <button class="chip" data-v="1" aria-pressed="true">×1</button>
+            <button class="chip" data-v="2" aria-pressed="false">×2</button>
+            <button class="chip" data-v="4" aria-pressed="false">×4</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="ti-pause">一時停止</button>
+          <button class="btn" id="ti-reset">初期化</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">臨界温度 T<sub>c</sub></span><span class="v">2.269</span></div>
+          <div class="meter"><span class="k">磁化 M(いま)</span><span class="v" id="ti-m">0</span></div>
+          <div class="meter"><span class="k">|M| の平均</span><span class="v" id="ti-am">計測中</span></div>
+          <div class="meter"><span class="k">エネルギー E / スピン</span><span class="v" id="ti-e">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>T = 3 の「ばらばら」から、温度を 1.5 まで下げてみてください。同じ向きの大きな領域が育ち、やがて画面全体が一色に近づきます。外から磁場を加えていないのに、磁化が自然に現れます(自発磁化)。</li>
+        <li>臨界温度 T<sub>c</sub> ≈ 2.269 の近くでは、様々な大きさの領域が現れ、ゆらぎが大きくなります。ここで磁化が連続的にゼロへ近づきます。下のグラフの曲線が、厳密解です。</li>
+        <li>T が T<sub>c</sub> より高いと、熱ゆらぎが勝って向きがばらばらになります。そのとき、平均の |M| はほぼゼロです。</li>
+        <li>外場 h を加えると、T が高くても磁化が現れます。h の符号を変えると、全体が反転します。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>E</i> = −<i>J</i> Σ<sub>⟨<i>ij</i>⟩</sub> <i>s<sub>i</sub> s<sub>j</sub></i> − <i>h</i> Σ<sub><i>i</i></sub> <i>s<sub>i</sub></i>,　<i>s<sub>i</sub></i> = ±1</span>
+        <span class="ln"><i>T<sub>c</sub></i> = 2<i>J</i> / (<i>k</i> ln(1 + √2)) ≈ 2.269 <i>J</i>/<i>k</i></span>
+        <span class="ln"><i>M</i>(<i>T</i>) = [ 1 − sinh<sup>−4</sup>(2<i>J</i>/<i>kT</i>) ]<sup>1/8</sup>　(<i>T</i> &lt; <i>T<sub>c</sub></i>, <i>h</i> = 0)</span>
+      </div>
+      <p class="foot">J = k = 1 の単位で、メトロポリス法(一つのスピンを選んで、エネルギーが下がるなら反転、上がるなら確率 e<sup>−ΔE/T</sup> で反転)で更新しています。格子が有限なので、T<sub>c</sub> のすぐ近くでは厳密解からずれます。</p>
+    </div>
+  </section>
+
+  <!-- 3. エントロピー -->
+  <section class="panel" id="panel-te" role="tabpanel" aria-labelledby="tab-te" hidden>
+    <div class="intro">
+      <h2>エントロピーが増えるのは、そちらの状態が圧倒的に多いから</h2>
+      <p>仕切りの左に集めた粒子を、仕切りを外して解き放ちます。粒子は互いに作用せず、ただ飛び回るだけです。それでも左右はほぼ半分ずつになります。</p>
+    </div>
+    <div class="stage-grid">
+      <div class="figs">
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-te" data-aspect="0.5" role="img" aria-label="仕切りのある箱の中の粒子。最初は左側にだけある。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>左側の粒子</span>
+            <span><i class="dot warm"></i>右側の粒子</span>
+          </figcaption>
+        </figure>
+        <figure class="fig">
+          <div class="cv"><canvas id="cv-ts" data-aspect="0.5" role="img" aria-label="左側にいる粒子の割合とエントロピーの時間変化。"></canvas></div>
+          <figcaption>
+            <span><i class="dot accent"></i>左にいる割合 n<sub>L</sub> / N</span>
+            <span><i class="dot warm"></i>エントロピー S / S<sub>max</sub></span>
+            <span>横軸は直近の時間(右端が現在)</span>
+          </figcaption>
+        </figure>
+      </div>
+
+      <div class="ctrl">
+        <div class="field">
+          <label for="te-n"><span>粒子の数 N</span><output id="te-n-v"></output></label>
+          <input type="range" id="te-n" min="6" max="300" step="2" value="40">
+        </div>
+        <div class="field">
+          <span class="lab"><span>再生速度</span></span>
+          <div class="btns" id="te-speed">
+            <button class="chip" data-v="1" aria-pressed="true">×1</button>
+            <button class="chip" data-v="2" aria-pressed="false">×2</button>
+            <button class="chip" data-v="4" aria-pressed="false">×4</button>
+          </div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="te-part">仕切りを外す</button>
+          <button class="btn" id="te-pause">一時停止</button>
+          <button class="btn" id="te-reset">最初から</button>
+        </div>
+        <div class="meters">
+          <div class="meter"><span class="k">左の粒子 n<sub>L</sub> / N</span><span class="v" id="te-nl">0</span></div>
+          <div class="meter"><span class="k">エントロピー S / k = ln W</span><span class="v" id="te-s">0</span></div>
+          <div class="meter"><span class="k">S / S<sub>max</sub></span><span class="v" id="te-r">0</span></div>
+          <div class="meter"><span class="k">全部が左に戻る確率</span><span class="v" id="te-p">0</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="read">
+      <h3>見どころ</h3>
+      <ul>
+        <li>仕切りを外すと、粒子は右へ広がり、エントロピーが最大の付近(左右が半分ずつ)に近づきます。個々の粒子の運動に「混ざろうとする力」はありません。</li>
+        <li>左に n<sub>L</sub> 個いる配置の数は W = N! / (n<sub>L</sub>! (N − n<sub>L</sub>)!) です。n<sub>L</sub> = N/2 の配置が、飛び抜けて多くなっています。S = k ln W は、この数の対数です。</li>
+        <li>粒子の数 N を 6 や 10 にしてみてください。いったん混ざった後でも、何度も左に偏った状態に戻ります。エントロピーの増大は、絶対の法則ではなく、確率が圧倒的に大きいという意味の法則です。</li>
+        <li>N を 100、200 と増やすと、ゆらぎは小さくなり、全部が左へ戻る確率は 2<sup>−N</sup> に比例して小さくなります。N が 10²³ のとき、それは起こらないと言ってよい確率です。</li>
+      </ul>
+      <h3>式</h3>
+      <div class="eq">
+        <span class="ln"><i>W</i> = <i>N</i>! / ( <i>n<sub>L</sub></i>! (<i>N</i> − <i>n<sub>L</sub></i>)! )</span>
+        <span class="ln"><i>S</i> = <i>k</i> ln <i>W</i>,　<i>S</i><sub>max</sub> = <i>k</i> ln <i>W</i>(<i>n<sub>L</sub></i> = <i>N</i>/2)</span>
+      </div>
+      <p class="foot">相互作用のない粒子が、壁と仕切りで反射するだけのモデルです。「仕切りを入れる」で再び仕切ると、そのときの偏りのまま閉じ込められます。</p>
+    </div>
+  </section>
+
+  <p class="foot">試作版です。数値はすべてブラウザ内で計算しています。</p>
+  <nav class="sitenav" aria-label="サイト内リンク"><a href="index.html">ホーム</a><a href="about.html">運営者情報</a><a href="privacy.html">プライバシーポリシー</a></nav>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const PI = Math.PI;
+  const TAU = 2 * Math.PI;
+  const MONO = '11px "IBM Plex Mono", ui-monospace, Menlo, monospace';
+  const SANS = '12.5px "Zen Kaku Gothic New", "Hiragino Sans", sans-serif';
+  const RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const C = {};
+  const COLOR_KEYS = ['ink', 'ink-2', 'ink-3', 'line', 'grid', 'accent', 'warm', 'green', 'violet', 'stage', 'surface'];
+  let colorSig = '';
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    let sig = '';
+    for (const k of COLOR_KEYS) { C[k] = cs.getPropertyValue('--' + k).trim(); sig += C[k]; }
+    const changed = sig !== colorSig;
+    colorSig = sig;
+    return changed;
+  }
+  function rgb(hex) {
+    const h = hex.replace('#', '');
+    const f = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
+    return [parseInt(f.slice(0, 2), 16), parseInt(f.slice(2, 4), 16), parseInt(f.slice(4, 6), 16)];
+  }
+  function fit(cv) {
+    const w = Math.max(200, cv.parentElement.clientWidth);
+    const h = Math.round(w * parseFloat(cv.dataset.aspect));
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.height = h + 'px';
+    cv.width = Math.round(w * dpr);
+    cv.height = Math.round(h * dpr);
+    const ctx = cv.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: w, h: h };
+  }
+  function setText(id, s) { const el = $(id); if (el && el.textContent !== s) el.textContent = s; }
+  function bindRange(id, fmtFn, onChange) {
+    const el = $(id), out = $(id + '-v');
+    const upd = () => { out.innerHTML = fmtFn(+el.value); };
+    el.addEventListener('input', () => { upd(); onChange(+el.value); });
+    upd();
+  }
+  function bindChips(groupId, onPick) {
+    const chips = $(groupId).querySelectorAll('.chip');
+    chips.forEach((ch) => {
+      ch.addEventListener('click', () => {
+        chips.forEach((o) => o.setAttribute('aria-pressed', o === ch ? 'true' : 'false'));
+        onPick(parseFloat(ch.dataset.v));
+      });
+    });
+  }
+  function setChip(groupId, v) {
+    $(groupId).querySelectorAll('.chip').forEach((o) => o.setAttribute('aria-pressed', parseFloat(o.dataset.v) === v ? 'true' : 'false'));
+  }
+  function setRange(id, v) { const el = $(id); el.value = v; el.dispatchEvent(new Event('input')); }
+  function arrow(ctx, x0, y0, x1, y1, col, lw) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy);
+    if (L < 2) return;
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = lw || 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+    const ux = dx / L, uy = dy / L, hl = Math.min(10, L * 0.55), hw = hl * 0.55;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x1 - ux * hl - uy * hw, y1 - uy * hl + ux * hw);
+    ctx.lineTo(x1 - ux * hl + uy * hw, y1 - uy * hl - ux * hw);
+    ctx.closePath(); ctx.fill();
+  }
+  function setPauseLabel(btnId, paused) { $(btnId).textContent = paused ? '再開' : '一時停止'; }
+  function fmt(x, d) { return (Math.abs(x) < 0.5 * Math.pow(10, -d) ? 0 : x).toFixed(d); }
+  function niceStep(raw) {
+    const p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p;
+    return (f < 1.5 ? 1 : f < 3.5 ? 2 : f < 7.5 ? 5 : 10) * p;
+  }
+  // 横軸の目盛り(値 v0〜v1 を px0〜px1 に対応させ、y に線を引く)
+  function drawAxisX(ctx, px0, px1, v0, v1, y, step, decimals) {
+    ctx.strokeStyle = C.line; ctx.fillStyle = C['ink-3']; ctx.lineWidth = 1; ctx.font = MONO;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.beginPath(); ctx.moveTo(px0, y); ctx.lineTo(px1, y); ctx.stroke();
+    for (let v = Math.ceil(v0 / step - 1e-9) * step; v <= v1 + 1e-9; v += step) {
+      const x = px0 + (v - v0) / (v1 - v0) * (px1 - px0);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y + 4); ctx.stroke();
+      ctx.fillText((Math.abs(v) < 1e-9 ? 0 : v).toFixed(decimals), x, y + 6);
+    }
+  }
+
+  // タブ切り替えと描画ループ。modules[name] = { frame(dt), resize(), invalidate() }
+  function startApp(TABS, modules) {
+    let active = TABS[0];
+    function show(name, focus) {
+      active = name;
+      TABS.forEach((nm) => {
+        const sel = nm === name, tb = $('tab-' + nm);
+        tb.setAttribute('aria-selected', sel ? 'true' : 'false');
+        tb.tabIndex = sel ? 0 : -1;
+        $('panel-' + nm).hidden = !sel;
+        if (sel && focus) tb.focus();
+      });
+      modules[name].resize();
+      modules[name].invalidate();
+    }
+    TABS.forEach((nm, i) => {
+      const tb = $('tab-' + nm);
+      tb.addEventListener('click', () => show(nm));
+      tb.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') { e.preventDefault(); show(TABS[(i + 1) % TABS.length], true); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); show(TABS[(i + TABS.length - 1) % TABS.length], true); }
+      });
+    });
+    const wrapEl = document.querySelector('.wrap');
+    let lastW = 0;
+    function onResize() {
+      const w = wrapEl.clientWidth;
+      if (w === lastW) return;
+      lastW = w;
+      modules[active].resize();
+      modules[active].invalidate();
+    }
+    if (window.ResizeObserver) new ResizeObserver(onResize).observe(wrapEl);
+    window.addEventListener('resize', onResize);
+    let last = 0;
+    function frame(ts) {
+      if (!last) last = ts;
+      const dt = Math.min(0.05, (ts - last) / 1000);
+      last = ts;
+      if (readColors()) modules[active].invalidate();
+      modules[active].frame(dt);
+      requestAnimationFrame(frame);
+    }
+    readColors();
+    lastW = wrapEl.clientWidth;
+    modules[active].resize();
+    requestAnimationFrame(frame);
+  }
+
+  /* PHYSICS-BEGIN */
+  // ---- 硬い円盤の気体(2次元、質量 1、ボルツマン定数 1)----
+  function gasMake(N, Wd, Ht, rad, mode, rng) {
+    const g = { N: N, W: Wd, H: Ht, rad: rad, x: new Float64Array(N), y: new Float64Array(N), vx: new Float64Array(N), vy: new Float64Array(N),
+      imp: 0, time: 0 };
+    const cols = Math.ceil(Math.sqrt(N * Wd / Ht)), rows = Math.ceil(N / cols);
+    const sx = (Wd - 2 * rad) / cols, sy = (Ht - 2 * rad) / rows;
+    for (let i = 0; i < N; i++) {
+      g.x[i] = rad + sx * (i % cols + 0.5); g.y[i] = rad + sy * (Math.floor(i / cols) + 0.5);
+      const sp = mode === 1 ? (i % 2 ? 1.5 : 0.4) : 1, a = 2 * Math.PI * rng();
+      g.vx[i] = sp * Math.cos(a); g.vy[i] = sp * Math.sin(a);
+    }
+    return g;
+  }
+  function gasStep(g, dt) {
+    const N = g.N, x = g.x, y = g.y, vx = g.vx, vy = g.vy, r = g.rad, W = g.W, H = g.H;
+    for (let i = 0; i < N; i++) {
+      x[i] += vx[i] * dt; y[i] += vy[i] * dt;
+      if (x[i] < r) { x[i] = 2 * r - x[i]; g.imp += 2 * Math.abs(vx[i]); vx[i] = Math.abs(vx[i]); }
+      else if (x[i] > W - r) { x[i] = 2 * (W - r) - x[i]; g.imp += 2 * Math.abs(vx[i]); vx[i] = -Math.abs(vx[i]); }
+      if (y[i] < r) { y[i] = 2 * r - y[i]; g.imp += 2 * Math.abs(vy[i]); vy[i] = Math.abs(vy[i]); }
+      else if (y[i] > H - r) { y[i] = 2 * (H - r) - y[i]; g.imp += 2 * Math.abs(vy[i]); vy[i] = -Math.abs(vy[i]); }
+    }
+    const D2 = 4 * r * r;
+    for (let i = 0; i < N; i++) {
+      for (let j = i + 1; j < N; j++) {
+        const dx = x[j] - x[i];
+        if (dx > 2 * r || dx < -2 * r) continue;
+        const dy = y[j] - y[i], d2 = dx * dx + dy * dy;
+        if (d2 >= D2 || d2 === 0) continue;
+        const d = Math.sqrt(d2), nx = dx / d, ny = dy / d;
+        const dvn = (vx[i] - vx[j]) * nx + (vy[i] - vy[j]) * ny;   // 近づいているとき正
+        if (dvn > 0) { vx[i] -= dvn * nx; vy[i] -= dvn * ny; vx[j] += dvn * nx; vy[j] += dvn * ny; }
+        const push = 0.5 * (2 * r - d);
+        x[i] -= push * nx; y[i] -= push * ny; x[j] += push * nx; y[j] += push * ny;
+      }
+    }
+    g.time += dt;
+  }
+  function gasKE(g) { let e = 0; for (let i = 0; i < g.N; i++) e += 0.5 * (g.vx[i] * g.vx[i] + g.vy[i] * g.vy[i]); return e; }
+  function gasKT(g) { return gasKE(g) / g.N; }                       // 2次元: ⟨KE⟩ = kT
+  function gasScaleV(g, f) { for (let i = 0; i < g.N; i++) { g.vx[i] *= f; g.vy[i] *= f; } }
+  function gasSetWidth(g, W2) {
+    const f = (W2 - 2 * g.rad) / (g.W - 2 * g.rad);
+    for (let i = 0; i < g.N; i++) g.x[i] = g.rad + (g.x[i] - g.rad) * f;
+    g.W = W2;
+  }
+  // 2次元のマクスウェル分布: f(v) = (v/kT) exp(−v²/2kT)
+  function mbSpeed(v, kT) { return v / kT * Math.exp(-v * v / (2 * kT)); }
+  function speedHist(g, nb, vmax, out) {
+    out.fill(0);
+    for (let i = 0; i < g.N; i++) {
+      const b = Math.floor(Math.hypot(g.vx[i], g.vy[i]) / vmax * nb);
+      if (b < nb) out[b] += 1;
+    }
+    const w = vmax / nb;
+    for (let b = 0; b < nb; b++) out[b] /= g.N * w;                // 確率密度にそろえる
+    return out;
+  }
+
+  // ---- 2次元イジング模型(J = 1、k_B = 1、周期境界)----
+  function isingMake(L, up, rng) {
+    const s = new Int8Array(L * L);
+    for (let i = 0; i < L * L; i++) s[i] = up ? 1 : (rng() < 0.5 ? 1 : -1);
+    return s;
+  }
+  function isingSweep(s, L, T, h, rng) {
+    const n = L * L;
+    for (let k = 0; k < n; k++) {
+      const i = Math.floor(rng() * n), x = i % L, y = (i - x) / L;
+      const nb = s[y * L + (x + 1) % L] + s[y * L + (x + L - 1) % L] + s[((y + 1) % L) * L + x] + s[((y + L - 1) % L) * L + x];
+      const dE = 2 * s[i] * (nb + h);
+      if (dE <= 0 || rng() < Math.exp(-dE / T)) s[i] = -s[i];
+    }
+  }
+  function isingStats(s, L, h) {
+    let m = 0, b = 0;
+    for (let y = 0; y < L; y++) for (let x = 0; x < L; x++) {
+      const v = s[y * L + x]; m += v;
+      b += v * (s[y * L + (x + 1) % L] + s[((y + 1) % L) * L + x]);
+    }
+    const n = L * L;
+    return { M: m / n, E: -b / n - h * m / n };
+  }
+  const ISING_TC = 2 / Math.log(1 + Math.SQRT2);
+  function onsagerM(T) {
+    if (T >= ISING_TC) return 0;
+    return Math.pow(1 - Math.pow(Math.sinh(2 / T), -4), 0.125);
+  }
+
+  // ---- 混ざり合いとエントロピー(相互作用しない N 個の粒子)----
+  const LNF = [0];
+  function lnFact(n) { while (LNF.length <= n) LNF.push(LNF[LNF.length - 1] + Math.log(LNF.length)); return LNF[n]; }
+  function lnBinom(N, n) { return lnFact(N) - lnFact(n) - lnFact(N - n); }   // S/k = ln W
+  function mixMake(N, Wd, Ht, rng) {
+    const m = { N: N, W: Wd, H: Ht, x: new Float64Array(N), y: new Float64Array(N), vx: new Float64Array(N), vy: new Float64Array(N) };
+    for (let i = 0; i < N; i++) {
+      m.x[i] = 0.05 * Wd + 0.4 * Wd * rng(); m.y[i] = 0.05 * Ht + 0.9 * Ht * rng();
+      const sp = 1.4 * (0.5 + rng()), a = 2 * Math.PI * rng();
+      m.vx[i] = sp * Math.cos(a); m.vy[i] = sp * Math.sin(a);
+    }
+    return m;
+  }
+  function mixStep(m, dt, partition) {
+    const mid = m.W / 2;
+    for (let i = 0; i < m.N; i++) {
+      const x0 = m.x[i];
+      let x = x0 + m.vx[i] * dt, y = m.y[i] + m.vy[i] * dt;
+      if (x < 0) { x = -x; m.vx[i] = -m.vx[i]; } else if (x > m.W) { x = 2 * m.W - x; m.vx[i] = -m.vx[i]; }
+      if (y < 0) { y = -y; m.vy[i] = -m.vy[i]; } else if (y > m.H) { y = 2 * m.H - y; m.vy[i] = -m.vy[i]; }
+      if (partition && ((x0 < mid) !== (x < mid))) { x = x0; m.vx[i] = -m.vx[i]; }
+      m.x[i] = x; m.y[i] = y;
+    }
+  }
+  function mixLeft(m) { let n = 0; for (let i = 0; i < m.N; i++) if (m.x[i] < m.W / 2) n++; return n; }
+  /* PHYSICS-END */
+
+  /* ---------- 1. 気体 ---------- */
+  const TG = (function () {
+    const WMAX = 20, HT = 12, RAD = 0.2, DT = 0.015, NB = 24, VMAX = 4, YMAX = 1.6;
+    const cvA = $('cv-tg'), cvH = $('cv-th');
+    let a, b, sa = { w: 0, h: 0 }, sb = { w: 0, h: 0 };
+    let g, paused = RM, speed = 1, init = 0, acc = 0, samples = [];
+    const avg = new Float64Array(NB), hist = new Float64Array(NB);
+
+    function reset() {
+      g = gasMake(+$('tg-n').value, +$('tg-w').value, HT, RAD, init, Math.random);
+      acc = 0; samples = [];
+      speedHist(g, NB, VMAX, hist); avg.set(hist);
+    }
+    function advance(dt) {
+      acc += dt * 240 * speed;
+      const n = Math.min(40, Math.floor(acc)); acc -= Math.floor(acc);
+      for (let i = 0; i < n; i++) gasStep(g, DT);
+      speedHist(g, NB, VMAX, hist);
+      const al = 1 - Math.exp(-n * DT / 3);
+      for (let i = 0; i < NB; i++) avg[i] += al * (hist[i] - avg[i]);
+      samples.push([g.time, g.imp]);
+      while (samples.length > 2 && samples[1][0] < g.time - 6) samples.shift();
+    }
+    function mix(c1, c2, t) { return 'rgb(' + Math.round(c1[0] + (c2[0] - c1[0]) * t) + ',' + Math.round(c1[1] + (c2[1] - c1[1]) * t) + ',' + Math.round(c1[2] + (c2[2] - c1[2]) * t) + ')'; }
+    function drawBox() {
+      const W = sa.w, H = sa.h, s = W / WMAX, bw = g.W * s;
+      a.clearRect(0, 0, W, H); a.fillStyle = C.surface; a.fillRect(0, 0, bw, H);
+      a.fillStyle = C.stage; a.fillRect(bw, 0, W - bw, H);
+      if (W - bw > 2) {
+        a.save(); a.beginPath(); a.rect(bw, 0, W - bw, H); a.clip();
+        a.strokeStyle = C['ink-3']; a.globalAlpha = 0.35; a.lineWidth = 1; a.beginPath();
+        for (let x = bw - H; x < W; x += 10) { a.moveTo(x, H); a.lineTo(x + H, 0); }
+        a.stroke(); a.restore(); a.globalAlpha = 1;
+      }
+      a.strokeStyle = C['ink-2']; a.lineWidth = 3; a.beginPath(); a.moveTo(bw, 0); a.lineTo(bw, H); a.stroke();
+      const c1 = rgb(C.accent), c2 = rgb(C.warm), r = Math.max(2, RAD * s);
+      for (let i = 0; i < g.N; i++) {
+        const v = Math.hypot(g.vx[i], g.vy[i]);
+        a.fillStyle = mix(c1, c2, Math.min(1, v / 2.6));
+        a.beginPath(); a.arc(g.x[i] * s, g.y[i] * s, r, 0, TAU); a.fill();
+      }
+    }
+    function drawHist() {
+      const W = sb.w, H = sb.h, x0 = 30, x1 = W - 12, yb = H - 24, yt = 10, X = (v) => x0 + v / VMAX * (x1 - x0), Y = (d) => yb - d / YMAX * (yb - yt);
+      b.clearRect(0, 0, W, H); b.fillStyle = C.stage; b.fillRect(0, 0, W, H);
+      b.save(); b.beginPath(); b.rect(x0, 0, x1 - x0, H); b.clip();
+      b.fillStyle = C.accent; b.globalAlpha = 0.6;
+      for (let i = 0; i < NB; i++) { const xa = X(i * VMAX / NB), xb = X((i + 1) * VMAX / NB); b.fillRect(xa + 1, Y(avg[i]), xb - xa - 2, yb - Y(avg[i])); }
+      b.globalAlpha = 1; b.restore();
+      const kT = gasKT(g);
+      b.strokeStyle = C.warm; b.lineWidth = 2.2; b.beginPath();
+      for (let k = 0; k <= 160; k++) { const v = VMAX * k / 160, y = Y(mbSpeed(v, kT)); if (k) b.lineTo(X(v), y); else b.moveTo(X(v), y); }
+      b.stroke();
+      drawAxisX(b, x0, x1, 0, VMAX, yb, 1, 0);
+      b.fillStyle = C['ink-3']; b.font = MONO; b.textAlign = 'right'; b.textBaseline = 'top'; b.fillText('横軸: 速さ v', x1, 2);
+      b.textAlign = 'left'; b.fillText('縦軸: 確率密度', 4, 2);
+    }
+    function meters() {
+      const kT = gasKT(g), A = g.W * g.H, Pid = g.N * kT / A;
+      setText('tg-kt', kT.toFixed(2)); setText('tg-pid', Pid.toFixed(3));
+      const s0 = samples[0], s1 = samples[samples.length - 1];
+      if (s0 && s1[0] - s0[0] > 3) {
+        const P = (s1[1] - s0[1]) / (s1[0] - s0[0]) / (2 * (g.W + g.H));
+        setText('tg-p', P.toFixed(3)); setText('tg-r', (P / Pid).toFixed(2));
+      } else { setText('tg-p', '計測中'); setText('tg-r', '—'); }
+    }
+    bindChips('tg-init', (v) => { init = v; reset(); });
+    bindRange('tg-n', (v) => String(v), reset);
+    bindRange('tg-w', (v) => v.toFixed(1), (v) => { gasSetWidth(g, v); });
+    $('tg-heat').addEventListener('click', () => { gasScaleV(g, 1.2); speedHist(g, NB, VMAX, hist); avg.set(hist); samples = []; });
+    $('tg-cool').addEventListener('click', () => { gasScaleV(g, 1 / 1.2); speedHist(g, NB, VMAX, hist); avg.set(hist); samples = []; });
+    bindChips('tg-speed', (v) => { speed = v; });
+    $('tg-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('tg-pause', paused); });
+    $('tg-reset').addEventListener('click', reset);
+    setPauseLabel('tg-pause', paused);
+    function resize() { const A = fit(cvA); a = A.ctx; sa = A; const B = fit(cvH); b = B.ctx; sb = B; }
+    function frame(dt) { if (!paused) advance(dt); drawBox(); drawHist(); meters(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 2. イジング模型 ---------- */
+  const TI = (function () {
+    const L = 48, RATE = 30;
+    const cvS = $('cv-ti'), cvM = $('cv-tm');
+    const off = document.createElement('canvas'); off.width = L; off.height = L;
+    let a, b, sa = { w: 0, h: 0 }, sb = { w: 0, h: 0 };
+    let s, T = 3, h = 0, paused = RM, speed = 1, acc = 0, init = 0, buf = [], st = { M: 0, E: 0 };
+
+    function reset() { s = isingMake(L, init === 1, Math.random); buf = []; acc = 0; st = isingStats(s, L, h); }
+    function advance(dt) {
+      acc += dt * RATE * speed;
+      let n = Math.min(10, Math.floor(acc)); acc -= Math.floor(acc);
+      while (n-- > 0) isingSweep(s, L, T, h, Math.random);
+      st = isingStats(s, L, h);
+      buf.push(Math.abs(st.M)); if (buf.length > 90) buf.shift();
+    }
+    function drawGrid() {
+      const W = sa.w, H = sa.h;
+      const cx = off.getContext('2d'), img = cx.createImageData(L, L), d = img.data, up = rgb(C.warm), dn = rgb(C.accent);
+      for (let i = 0; i < L * L; i++) { const c = s[i] > 0 ? up : dn; d[4 * i] = c[0]; d[4 * i + 1] = c[1]; d[4 * i + 2] = c[2]; d[4 * i + 3] = 255; }
+      cx.putImageData(img, 0, 0);
+      a.imageSmoothingEnabled = false; a.drawImage(off, 0, 0, L, L, 0, 0, W, H);
+    }
+    function drawPlot() {
+      const W = sb.w, H = sb.h, l = 34, r = 12, t = 12, bt = 26, X = (T_) => l + (T_ - 1) / 3 * (W - l - r), Y = (m) => H - bt - m * (H - bt - t);
+      b.clearRect(0, 0, W, H); b.fillStyle = C.stage; b.fillRect(0, 0, W, H);
+      b.font = MONO; b.fillStyle = C['ink-3']; b.strokeStyle = C.line; b.lineWidth = 1; b.textAlign = 'right'; b.textBaseline = 'middle';
+      [0, 0.5, 1].forEach((m) => { b.beginPath(); b.moveTo(l, Y(m)); b.lineTo(W - r, Y(m)); b.stroke(); b.fillText(m.toFixed(1), l - 5, Y(m)); });
+      drawAxisX(b, l, W - r, 1, 4, H - bt, 1, 0);
+      b.textAlign = 'left'; b.textBaseline = 'top'; b.fillText('|M|', 4, 2); b.textAlign = 'right'; b.fillText('T', W - r, H - bt + 10 + 6);
+      b.setLineDash([4, 4]); b.strokeStyle = C['ink-3']; b.beginPath(); b.moveTo(X(ISING_TC), t); b.lineTo(X(ISING_TC), H - bt); b.stroke(); b.setLineDash([]);
+      b.fillStyle = C['ink-3']; b.textAlign = 'left'; b.textBaseline = 'top'; b.fillText('Tc', X(ISING_TC) + 3, t);
+      b.strokeStyle = C['ink-2']; b.lineWidth = 2; if (h !== 0) b.globalAlpha = 0.4; b.beginPath();
+      for (let k = 0; k <= 120; k++) { const T_ = 1 + (ISING_TC - 1) * k / 120, y = Y(onsagerM(T_)); if (k) b.lineTo(X(T_), y); else b.moveTo(X(T_), y); }
+      b.lineTo(X(ISING_TC), Y(0)); b.lineTo(X(4), Y(0)); b.stroke(); b.globalAlpha = 1;
+      const m = Math.abs(st.M);
+      b.fillStyle = C.accent; b.beginPath(); b.arc(X(T), Y(m), 5, 0, TAU); b.fill();
+      if (buf.length >= 30) { let sum = 0; for (const v of buf) sum += v; const am = sum / buf.length; b.fillStyle = C.warm; b.strokeStyle = C.surface; b.lineWidth = 1.5; b.beginPath(); b.arc(X(T), Y(am), 5.5, 0, TAU); b.fill(); b.stroke(); }
+      if (h !== 0) { b.fillStyle = C['ink-3']; b.textAlign = 'right'; b.textBaseline = 'top'; b.fillText('曲線は外場 h = 0 のとき', W - r, t); }
+    }
+    function meters() {
+      setText('ti-m', (st.M > 0 ? '+' : '') + st.M.toFixed(3)); setText('ti-e', st.E.toFixed(3));
+      if (buf.length >= 30) { let sum = 0; for (const v of buf) sum += v; setText('ti-am', (sum / buf.length).toFixed(3)); } else setText('ti-am', '計測中');
+    }
+    bindRange('ti-T', (v) => v.toFixed(2), (v) => { T = v; buf = []; });
+    bindRange('ti-h', (v) => (v > 0 ? '+' : '') + v.toFixed(2), (v) => { h = v; buf = []; });
+    bindChips('ti-init', (v) => { init = v; reset(); });
+    bindChips('ti-speed', (v) => { speed = v; });
+    $('ti-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('ti-pause', paused); });
+    $('ti-reset').addEventListener('click', reset);
+    setPauseLabel('ti-pause', paused);
+    function resize() { const A = fit(cvS); a = A.ctx; sa = A; const B = fit(cvM); b = B.ctx; sb = B; }
+    function frame(dt) { if (!paused) advance(dt); drawGrid(); drawPlot(); meters(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  /* ---------- 3. エントロピー ---------- */
+  const TE = (function () {
+    const WB = 20, HB = 10, DT = 0.02, NS = 300, SAMP = 0.1;
+    const cvA = $('cv-te'), cvT = $('cv-ts');
+    let a, b, sa = { w: 0, h: 0 }, sb = { w: 0, h: 0 };
+    let m, part = true, paused = RM, speed = 1, acc = 0, t = 0, nextS = 0, ser = [], N = 40, Smax = 0;
+
+    function reset() {
+      N = +$('te-n').value; m = mixMake(N, WB, HB, Math.random); part = true; acc = 0; t = 0; nextS = 0; ser = [];
+      Smax = lnBinom(N, N / 2); $('te-part').textContent = '仕切りを外す'; sample();
+    }
+    function sample() { const nl = mixLeft(m); ser.push([nl / N, lnBinom(N, nl) / Smax]); if (ser.length > NS) ser.shift(); }
+    function advance(dt) {
+      acc += dt * 180 * speed;
+      const n = Math.min(40, Math.floor(acc)); acc -= Math.floor(acc);
+      for (let i = 0; i < n; i++) { mixStep(m, DT, part); t += DT; if (t >= nextS) { nextS += SAMP; sample(); } }
+    }
+    function drawBox() {
+      const W = sa.w, H = sa.h, s = W / WB, r = Math.max(2, Math.min(4, 120 / Math.sqrt(N) * 0.18));
+      a.clearRect(0, 0, W, H); a.fillStyle = C.surface; a.fillRect(0, 0, W, H);
+      const mid = W / 2;
+      if (part) { a.strokeStyle = C['ink-2']; a.lineWidth = 4; a.beginPath(); a.moveTo(mid, 0); a.lineTo(mid, H); a.stroke(); }
+      else { a.strokeStyle = C['ink-3']; a.setLineDash([4, 5]); a.lineWidth = 1; a.beginPath(); a.moveTo(mid, 0); a.lineTo(mid, H); a.stroke(); a.setLineDash([]); }
+      for (let i = 0; i < m.N; i++) {
+        a.fillStyle = m.x[i] < WB / 2 ? C.accent : C.warm;
+        a.beginPath(); a.arc(m.x[i] * s, m.y[i] * s, r, 0, TAU); a.fill();
+      }
+    }
+    function drawSeries() {
+      const W = sb.w, H = sb.h, l = 34, r = 12, tp = 12, bt = 22, X = (i) => l + i / (NS - 1) * (W - l - r), Y = (v) => H - bt - v * (H - bt - tp);
+      b.clearRect(0, 0, W, H); b.fillStyle = C.stage; b.fillRect(0, 0, W, H);
+      b.font = MONO; b.fillStyle = C['ink-3']; b.strokeStyle = C.line; b.lineWidth = 1; b.textAlign = 'right'; b.textBaseline = 'middle';
+      [0, 0.5, 1].forEach((v) => { b.beginPath(); b.moveTo(l, Y(v)); b.lineTo(W - r, Y(v)); b.stroke(); b.fillText(v.toFixed(1), l - 5, Y(v)); });
+      const line = (k, col) => { b.strokeStyle = col; b.lineWidth = 2; b.lineJoin = 'round'; b.beginPath(); ser.forEach((p, i) => { if (i) b.lineTo(X(i), Y(p[k])); else b.moveTo(X(i), Y(p[k])); }); b.stroke(); };
+      line(0, C.accent); line(1, C.warm);
+      b.fillStyle = C['ink-3']; b.textAlign = 'right'; b.textBaseline = 'top'; b.fillText('時間 →', W - r, H - bt + 6);
+    }
+    function meters() {
+      const nl = mixLeft(m), S = lnBinom(N, nl);
+      setText('te-nl', nl + ' / ' + N); setText('te-s', S.toFixed(1)); setText('te-r', (S / Smax).toFixed(3));
+      setText('te-p', '10^−' + (N * Math.LOG10E * Math.LN2).toFixed(1));
+    }
+    bindRange('te-n', (v) => String(v), reset);
+    bindChips('te-speed', (v) => { speed = v; });
+    $('te-part').addEventListener('click', () => { part = !part; $('te-part').textContent = part ? '仕切りを外す' : '仕切りを入れる'; });
+    $('te-pause').addEventListener('click', () => { paused = !paused; setPauseLabel('te-pause', paused); });
+    $('te-reset').addEventListener('click', reset);
+    setPauseLabel('te-pause', paused);
+    function resize() { const A = fit(cvA); a = A.ctx; sa = A; const B = fit(cvT); b = B.ctx; sb = B; }
+    function frame(dt) { if (!paused) advance(dt); drawBox(); drawSeries(); meters(); }
+    function invalidate() {}
+    reset();
+    return { frame: frame, resize: resize, invalidate: invalidate };
+  })();
+
+  startApp(['tg', 'ti', 'te'], { tg: TG, ti: TI, te: TE });
+})();
+</script>
+</body></html>
